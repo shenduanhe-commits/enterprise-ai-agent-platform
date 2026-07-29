@@ -1,23 +1,30 @@
-# Node
+# dependencies
 node_modules/
-dist/
 
-# Python
+# build
+dist/
+build/
+
+
+# python
 __pycache__/
 *.pyc
 .venv/
 
-# Environment
+
+# environment
 .env
 .env.*
+
 
 # IDE
 .vscode/
 .idea/
 
+
 # OS
 .DS_Store
-Thumbs.db
 
-# Logs
+
+# logs
 *.log
