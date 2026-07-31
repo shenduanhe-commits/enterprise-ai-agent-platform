@@ -1,20 +1,13 @@
 {
-  "name": "enterprise-ai-agent-platform",
+  "name": "eaap",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:web": "pnpm --dir apps/web dev",
+    "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
+    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:api\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.17.0",
-      "onFail": "download"
-    }
-  },
-  "type": "module"
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
 }

@@ -2,41 +2,776 @@
 
 # Learning Roadmap
 
-版本：V1.0
 
+Version: V1.0
 
-# 目标
+Status: Active
 
-通过完成 Enterprise AI Agent Platform 项目，成长为：
-
-> Enterprise AI Application Engineer
-
-
-具备：
-
-- 前端开发能力
-- 后端开发能力
-- AI Agent 开发能力
-- 系统设计能力
-- 企业工程能力
+Created: 2026-07
 
 
 ---
 
-# 总体学习路线
+# 1. Purpose
 
+
+本文档用于定义 EAAP 项目开发过程中的学习路线。
+
+
+目标：
+
+通过建设真实企业级 AI Agent 平台，系统掌握：
+
+- AI Application Development；
+- Agent Engineering；
+- Enterprise Software Architecture；
+- AI System Deployment；
+- AI Product Engineering。
+
+
+---
+
+# 2. Learning Philosophy
+
+
+EAAP采用：
+
+```
+Learn
+
+↓
+
+Build
+
+↓
+
+Validate
+
+↓
+
+Improve
 
 ```
 
-软件工程基础
+
+学习不是单独学习技术。
+
+
+而是：
+
+通过真实项目驱动学习。
+
+
+---
+
+# 3. Career Growth Path
+
+
+学习成长路线：
+
+
+```
+Frontend Engineer
+
 
 ↓
 
-Web全栈开发
+AI Application Engineer
+
 
 ↓
 
-AI Application
+Enterprise AI Engineer
+
+
+↓
+
+AI Solution Architect
+
+```
+
+
+---
+
+# 4. Learning Roadmap Overview
+
+
+| Stage | Goal | Related Milestone |
+|-|-|-|
+| Stage 0 | Engineering Foundation | Milestone 0 |
+| Stage 1 | Full Stack AI Application | Milestone 1 |
+| Stage 2 | Agent Engineer | Milestone 2 |
+| Stage 3 | Enterprise AI Engineer | Milestone 3 |
+| Stage 4 | Production AI Engineer | Milestone 4 |
+| Stage 5 | AI Solution Architect | Milestone 5 |
+
+
+---
+
+# Stage 0
+
+# Engineering Foundation
+
+
+对应：
+
+```
+Milestone 0
+
+Engineering Foundation
+
+```
+
+
+目标：
+
+从前端开发者转变为具备企业工程能力的开发者。
+
+
+---
+
+# Knowledge Areas
+
+
+## Project Engineering
+
+
+学习：
+
+- Monorepo；
+- Git Workflow；
+- Documentation Management；
+- ADR。
+
+
+---
+
+## Frontend Engineering
+
+
+学习：
+
+
+Vue3：
+
+- Composition API；
+- Component Design；
+- State Management；
+- Enterprise UI Architecture。
+
+
+TypeScript：
+
+- Type System；
+- Generic；
+- Interface Design。
+
+
+---
+
+## Backend Foundation
+
+
+学习：
+
+Python：
+
+- Python工程实践；
+- FastAPI；
+- API Design；
+- Database Connection。
+
+
+---
+
+## DevOps Foundation
+
+
+学习：
+
+- Docker；
+- Environment Management；
+- CI/CD基础。
+
+
+---
+
+# Output
+
+
+完成：
+
+- EAAP工程基础；
+- 前后端项目结构；
+- 企业开发流程。
+
+
+---
+
+# Stage 1
+
+# Full Stack AI Application Engineer
+
+
+对应：
+
+```
+Milestone 1
+
+Core Platform Foundation
+
+```
+
+
+目标：
+
+具备独立开发AI应用能力。
+
+
+---
+
+# Knowledge Areas
+
+
+## Backend Development
+
+
+学习：
+
+- REST API；
+- Authentication；
+- Permission System；
+- Database Design。
+
+
+---
+
+## AI Application Basics
+
+
+学习：
+
+- LLM API调用；
+- Prompt Engineering；
+- Context Management；
+- Structured Output。
+
+
+---
+
+## RAG Foundation
+
+
+学习：
+
+- Document Processing；
+- Embedding；
+- Vector Database；
+- Retrieval。
+
+
+---
+
+## Product Engineering
+
+
+学习：
+
+- User Flow；
+- Feature Design；
+- MVP开发。
+
+
+---
+
+# Output
+
+
+完成：
+
+第一个AI平台版本。
+
+
+能力：
+
+可以开发：
+
+```
+AI Chat Application
+
++
+
+Knowledge Assistant
+
++
+
+Enterprise Search
+
+```
+
+
+---
+
+# Stage 2
+
+# Agent Engineer
+
+
+对应：
+
+```
+Milestone 2
+
+AI Agent Runtime
+
+```
+
+
+目标：
+
+掌握Agent核心技术。
+
+
+---
+
+# Knowledge Areas
+
+
+## Agent Architecture
+
+
+学习：
+
+- Agent Loop；
+- Planning；
+- Reasoning；
+- Tool Calling。
+
+
+---
+
+## Memory System
+
+
+学习：
+
+- Short Term Memory；
+- Long Term Memory；
+- Conversation Memory。
+
+
+---
+
+## Tool System
+
+
+学习：
+
+- Tool Definition；
+- Function Calling；
+- Permission Control。
+
+
+---
+
+## Multi-Agent
+
+
+学习：
+
+- Agent Collaboration；
+- Task Delegation；
+- Agent Communication。
+
+
+---
+
+## A2A
+
+
+学习：
+
+- Agent Discovery；
+- Agent Protocol；
+- Agent Communication Pattern。
+
+
+---
+
+# Output
+
+
+完成：
+
+企业级Agent Runtime。
+
+
+能力：
+
+可以开发：
+
+```
+AI Agent
+
+Multi Agent System
+
+Agent Workflow
+
+```
+
+
+---
+
+# Stage 3
+
+# Enterprise AI Engineer
+
+
+对应：
+
+```
+Milestone 3
+
+Enterprise AI Capability
+
+```
+
+
+目标：
+
+解决企业真实业务问题。
+
+
+---
+
+# Knowledge Areas
+
+
+## Enterprise RAG
+
+
+学习：
+
+- Knowledge Governance；
+- Document Permission；
+- Hybrid Search；
+- Retrieval Optimization。
+
+
+---
+
+## AI Workflow
+
+
+学习：
+
+- Workflow Engine；
+- Task Automation；
+- Human Approval。
+
+
+---
+
+## AI Evaluation
+
+
+学习：
+
+- Prompt Evaluation；
+- Agent Evaluation；
+- Model Evaluation。
+
+
+---
+
+## Enterprise Integration
+
+
+学习：
+
+- API Integration；
+- Enterprise System Connection；
+- Data Pipeline。
+
+
+---
+
+# Output
+
+
+完成：
+
+企业可使用AI应用。
+
+
+例如：
+
+- 企业知识助手；
+- 自动分析助手；
+- 工作流Agent。
+
+
+---
+
+# Stage 4
+
+# Production AI Engineer
+
+
+对应：
+
+```
+Milestone 4
+
+Production Platform
+
+```
+
+
+目标：
+
+让AI系统达到生产标准。
+
+
+---
+
+# Knowledge Areas
+
+
+## Cloud Native
+
+
+学习：
+
+- Kubernetes；
+- Service Deployment；
+- Scaling。
+
+
+---
+
+## Observability
+
+
+学习：
+
+- Logging；
+- Metrics；
+- Tracing。
+
+
+---
+
+## Security
+
+
+学习：
+
+- Authentication；
+- Authorization；
+- Data Security。
+
+
+---
+
+## AI Governance
+
+
+学习：
+
+- Model Governance；
+- Agent Governance；
+- Cost Governance。
+
+
+---
+
+# Output
+
+
+具备：
+
+AI系统上线运营能力。
+
+
+---
+
+# Stage 5
+
+# AI Solution Architect
+
+
+对应：
+
+```
+Milestone 5
+
+AI Ecosystem
+
+```
+
+
+目标：
+
+具备AI架构设计能力。
+
+
+---
+
+# Knowledge Areas
+
+
+## Architecture Design
+
+
+学习：
+
+- Enterprise Architecture；
+- AI Platform Architecture；
+- Distributed System Design。
+
+
+---
+
+## AI Platform
+
+
+学习：
+
+- Agent Marketplace；
+- SDK Design；
+- Plugin System。
+
+
+---
+
+## Business Solution
+
+
+学习：
+
+- Requirement Analysis；
+- Solution Design；
+- Cost Estimation。
+
+
+---
+
+# Output
+
+
+能够：
+
+设计企业AI解决方案。
+
+
+---
+
+# 5. Recommended Learning Order
+
+
+不要：
+
+```
+先学习所有AI理论
+
+↓
+
+再开发项目
+
+```
+
+
+采用：
+
+
+```
+项目需求
+
+↓
+
+学习需要知识
+
+↓
+
+实现功能
+
+↓
+
+总结沉淀
+
+```
+
+
+---
+
+# 6. Technical Learning Stack
+
+
+## Frontend
+
+
+顺序：
+
+
+```
+Vue3
+
+↓
+
+TypeScript
+
+↓
+
+Enterprise UI
+
+↓
+
+Testing
+
+```
+
+
+---
+
+## Backend
+
+
+顺序：
+
+
+```
+Python
+
+↓
+
+FastAPI
+
+↓
+
+Database
+
+↓
+
+API Design
+
+```
+
+
+---
+
+## AI
+
+
+顺序：
+
+
+```
+LLM API
+
+↓
+
+Prompt
 
 ↓
 
@@ -52,506 +787,115 @@ Multi-Agent
 
 ↓
 
-Enterprise AI Platform
-
+A2A
 
 ```
 
----
-
-# Phase 0
-
-# 工程基础建设
-
-时间：
-
-2周
-
-
-目标：
-
-建立企业项目开发环境。
-
-
-学习：
-
-## Git
-
-掌握：
-
-- Git Flow
-- Branch
-- Commit Convention
-
 
 ---
 
-## Node
+## Infrastructure
 
-掌握：
 
-- npm
-- Vite
-- Vue工程
+顺序：
+
+
+```
+Docker
+
+↓
+
+CI/CD
+
+↓
+
+Cloud
+
+↓
+
+Kubernetes
+
+```
 
 
 ---
 
-## Python
+# 7. Portfolio Output
 
-掌握：
 
-- uv
-- 虚拟环境
-- 包管理
+完成EAAP后，应形成：
 
 
----
+## Engineering Portfolio
 
-## Docker
-
-掌握：
-
-- Image
-- Container
-- Compose
-
-
-产出：
-
-- Monorepo
-- Docker环境
-- README
-
-
----
-
-# Phase 1
-
-# AI Chat Platform
-
-
-时间：
-
-4-6周
-
-
-目标：
-
-完成第一个可运行AI产品。
-
-
-学习：
-
-## Vue3
-
-内容：
-
-- Composition API
-- Router
-- Pinia
-- Component Design
-
-
----
-
-## FastAPI
-
-内容：
-
-- REST API
-- Dependency Injection
-- Middleware
-
-
----
-
-## LLM API
-
-内容：
-
-- Chat Completion
-- Streaming
-- Token
-
-
----
-
-产出：
-
-Enterprise AI Chat
-
-
-掌握能力：
-
-可以开发AI聊天应用。
-
-
----
-
-# Phase 2
-
-# RAG Knowledge System
-
-
-时间：
-
-6周
-
-
-学习：
-
-## 文档处理
-
-- PDF解析
-- Text Split
-
-
----
-
-## Embedding
-
-理解：
-
-- Vector
-- Similarity
-
-
----
-
-## Vector Database
-
-学习：
-
-- Qdrant
-- Retrieval
-
-
----
-
-产出：
-
-企业知识助手。
-
-
-掌握能力：
-
-AI Knowledge Engineer
-
-
----
-
-# Phase 3
-
-# Agent Development
-
-
-时间：
-
-8周
-
-
-学习：
-
-## Agent基础
-
-理解：
-
-- Reasoning
-- Planning
-- Tool Use
-
-
----
-
-## LangGraph
-
-学习：
-
-- Node
-- State
-- Workflow
-
-
----
-
-## Memory
-
-学习：
-
-- Short Memory
-- Long Memory
-
-
-产出：
-
-Supervisor Agent
-
-
-掌握能力：
-
-Agent Developer
-
-
----
-
-# Phase 4
-
-# Enterprise Agent
-
-
-时间：
-
-8周
-
-
-学习：
-
-## Tool Calling
 
 包括：
 
-- Function Calling
-- API Tool
+
+- Enterprise AI Platform；
+- Agent Runtime；
+- RAG System；
+- Multi-Agent System；
+- Production Deployment。
 
 
 ---
 
-## Business Agent
-
-连接：
-
-- Database
-- ERP
-- CRM
+## Career Capability
 
 
----
+目标岗位：
 
-## Document Agent
-
-生成：
-
-- Word
-- Excel
-- PDF
-
-
-产出：
-
-企业自动化助手。
-
-
----
-
-# Phase 5
-
-# Multi-Agent
-
-
-时间：
-
-8周
-
-
-学习：
-
-- Agent Communication
-- A2A
-- Task Delegation
-
-
-架构：
 
 ```
-Supervisor
+AI Application Engineer
 
- |
 
-Agent A
+Enterprise AI Engineer
 
-Agent B
 
-Agent C
+AI Solution Engineer
+
+
+AI Platform Engineer
 
 ```
 
 
-产出：
+---
 
-Multi-Agent Platform
+# 8. Learning Status
+
+
+Current Stage:
+
+
+```
+Stage 0
+
+Engineering Foundation
+
+```
+
+
+Current Focus:
+
+
+```
+Project Setup
+
++
+
+Engineering Practice
+
+```
 
 
 ---
 
-# Phase 6
+# Version History
 
-# Enterprise Production
 
-
-时间：
-
-8周
-
-
-学习：
-
-## Security
-
-- Authentication
-- Authorization
-
-
----
-
-## Observability
-
-- Logging
-- Trace
-- Metrics
-
-
----
-
-## Deployment
-
-- Docker
-- CI/CD
-- Cloud
-
-
-产出：
-
-Production Ready Platform
-
-
----
-
-# 每周学习方式
-
-
-## Week Start
-
-制定：
-
-- 本周目标
-- 技术学习点
-- 开发任务
-
-
----
-
-## Development
-
-完成：
-
-- Coding
-- Testing
-
-
----
-
-## Week End
-
-输出：
-
-- 技术总结
-- 文档更新
-- Git Commit
-
-
----
-
-# 面试准备方向
-
-
-## AI Agent岗位
-
-重点：
-
-- Agent架构
-- RAG
-- Tool Calling
-- LangGraph
-
-
----
-
-## 后端岗位
-
-重点：
-
-- FastAPI
-- Database
-- API Design
-
-
----
-
-## 前端岗位
-
-重点：
-
-- Vue3
-- TypeScript
-- AI UI设计
-
-
----
-
-# 日本就业方向准备
-
-
-增加：
-
-## 日语企业场景
-
-例如：
-
-- 営業報告書
-- 議事録
-- 稟議書
-- 社内FAQ
-
-
----
-
-## 技术日语
-
-学习：
-
-- AI用語
-- 開発用語
-- 設計書読解
-
-
----
-
-# 最终能力目标
-
-
-完成项目后：
-
-能够：
-
-- 独立设计AI应用
-- 开发Agent系统
-- 设计企业架构
-- 完成部署上线
-- 面试AI工程岗位
-
-
-目标职位：
-
-国内：
-
-- AI应用工程师
-- Agent开发工程师
-- LLM应用工程师
-
-
-日本：
-
-- AI Engineer
-- Backend Engineer
-- AI Application Engineer
+|Version|Date|Description|
+|-|-|-|
+|V1.0|2026-07|Initial Learning Roadmap|

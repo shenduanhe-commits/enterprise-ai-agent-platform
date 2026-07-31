@@ -1,28 +1,71 @@
 # Enterprise AI Agent Platform
 
 
-Enterprise AI Agent Platform.
+## Overview
 
 
-## Architecture
+EAAP is an enterprise AI Agent platform.
+
+
+## Vision
+
+
+Build an enterprise AI application infrastructure.
+
+
+## Tech Stack
 
 
 Frontend:
 
-Vue3
+- Vue 3
+- TypeScript
 
 
 Backend:
 
-FastAPI
+- Python
+- FastAPI
 
 
 AI:
 
-Agent Runtime
+- LLM
+- RAG
+- Agent
+- Multi-Agent
 
 
 Infrastructure:
 
-Docker
+- Docker
+- PostgreSQL
+- Redis
+- Qdrant
 
+
+## Project Status
+
+
+Current Milestone:
+
+
+Milestone 0
+
+Engineering Foundation
+
+
+## Documentation
+
+
+See:
+
+```
+docs/
+```
+
+
+## License
+
+
+TBD

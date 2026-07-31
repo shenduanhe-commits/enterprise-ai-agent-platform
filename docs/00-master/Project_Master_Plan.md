@@ -1,587 +1,1076 @@
-# Enterprise AI Agent Platform（EAAP）
-# 项目总体规划（Master Plan）V1.0
+# Enterprise AI Agent Platform
 
-> Version: V1.0
->
-> Author: 申一 & ChatGPT
->
-> Status: Planning
->
-> Goal: 打造一个符合企业级标准、可持续迭代、支持 AI Agent、RAG、Multi-Agent、A2A、MCP 的 AI 应用平台。
+# Project Master Plan
 
----
 
-# 一、项目愿景（Vision）
+Version: V1.0
 
-Enterprise AI Agent Platform（EAAP）是一个面向企业办公场景的 AI Agent 平台。
+Status: Active
 
-项目不仅是一个学习项目，而是按照真实企业研发流程打造的可持续迭代产品。
+Created: 2026-07
 
-项目目标包括：
-
-- 学习企业级 AI Agent 开发流程
-- 掌握现代 AI Application 技术栈
-- 掌握完整的软件工程能力
-- 建立能够展示个人技术能力的开源项目
-- 支撑国内 AI 岗位及日本企业求职
 
 ---
 
-# 二、项目定位
+# 1. Project Overview
 
-EAAP 定位为：
 
-> 企业 AI Agent 工作平台（Enterprise AI Workspace）
+## 1.1 Project Name
 
-系统帮助企业员工：
 
-- 查询企业知识
-- 调用企业业务能力
-- 自动生成文档
-- 执行业务流程
-- 多 Agent 协同工作
+Enterprise AI Agent Platform
 
-最终支持：
 
-- Chat
-- RAG
-- Tool Calling
-- Workflow
-- Multi-Agent
-- A2A
-- MCP
+## 1.2 Project Code
+
+
+EAAP
+
+
+## 1.3 Project Type
+
+
+Enterprise AI Application Platform
+
 
 ---
 
-# 三、项目目标
+# 2. Project Vision
 
-## 第一阶段目标（3~4个月）
+
+## Vision
+
+
+构建一个企业级 AI Agent 平台。
+
+
+EAAP 目标不是创建单一 AI 助手，而是建设企业 AI 应用基础设施。
+
+
+平台提供：
+
+
+- Agent 创建与管理能力；
+- 企业知识管理能力；
+- AI Workflow 自动化能力；
+- Multi-Agent 协作能力；
+- A2A Agent 通信能力；
+- 企业级 AI 治理能力。
+
+
+最终目标：
+
+
+```
+Enterprise AI Agent Operating Platform
+
+```
+
+
+---
+
+# 3. Project Objectives
+
+
+## 3.1 Product Objective
+
+
+建设一个企业可以实际使用的 AI 平台。
+
+
+支持：
+
+- 企业员工使用 AI Agent；
+- 企业知识智能检索；
+- 业务流程自动化；
+- AI应用快速构建。
+
+
+---
+
+## 3.2 Engineering Objective
+
+
+通过真实企业项目学习完整 AI 工程流程。
+
+
+掌握：
+
+
+- 企业软件架构；
+- AI Application Development；
+- Agent Engineering；
+- RAG系统；
+- Multi-Agent系统；
+- A2A协议；
+- AI系统部署与运营。
+
+
+---
+
+## 3.3 Career Objective
+
+
+能力成长路线：
+
+
+```
+Frontend Engineer
+
+↓
+
+AI Application Engineer
+
+↓
+
+Enterprise AI Engineer
+
+↓
+
+AI Solution Architect
+
+```
+
+
+---
+
+# 4. Project Development Philosophy
+
+
+EAAP遵循企业软件开发原则：
+
+
+```
+Documentation First
+
+↓
+
+Architecture First
+
+↓
+
+Implementation
+
+↓
+
+Testing
+
+↓
+
+Deployment
+
+↓
+
+Operation
+
+↓
+
+Optimization
+
+```
+
+
+---
+
+# 5. Project Lifecycle
+
+
+EAAP整体分为三个阶段：
+
+
+```
+Phase 1
+
+Foundation
+
+
+↓
+
+Phase 2
+
+Platform Development
+
+
+↓
+
+Phase 3
+
+Production Evolution
+
+```
+
+
+---
+
+# Phase 1
+
+# Foundation
+
+
+包含：
+
+```
+Milestone 0
+
+Engineering Foundation
+
+```
+
 
 目标：
 
-完成企业 AI Chat 平台。
+建立完整工程基础。
 
-包括：
-
-- AI Chat
-- Streaming
-- 会话管理
-- 用户系统
-- Vue + FastAPI
-
-完成后：
-
-能够胜任 AI 应用开发岗位。
 
 ---
 
-## 第二阶段目标（5~8个月）
+# Phase 2
 
-增加：
+# Platform Development
 
-- RAG
-- 企业知识库
-- Tool Calling
-- LangGraph
-- Workflow
 
-完成后：
+包含：
 
-能够胜任 Agent 开发岗位。
-
----
-
-## 第三阶段目标（9~12个月）
-
-增加：
-
-- Multi-Agent
-- A2A
-- MCP
-- 企业后台
-- 权限系统
-- Docker
-- CI/CD
-
-完成后：
-
-达到企业级 AI 平台标准。
-
----
-
-# 四、项目核心能力
-
-## AI能力
-
-- Chat
-- Prompt Engineering
-- Structured Output
-- Function Calling
-- Tool Calling
-- RAG
-- Workflow
-- Agent Memory
-- Multi-Agent
-- A2A
-- MCP
-
----
-
-## 工程能力
-
-- Vue3
-- TypeScript
-- FastAPI
-- Python
-- PostgreSQL
-- Redis
-- Qdrant
-- Docker
-- GitHub Actions
-- Playwright
-- Vitest
-- Ruff
-- Pytest
-
----
-
-## 产品能力
-
-学习：
-
-- 产品需求分析
-- PRD
-- 信息架构
-- API设计
-- 数据库设计
-- Agent设计
-- 架构设计
-
----
-
-# 五、技术架构
 
 ```
-Vue3
+Milestone 1
 
-↓
+Core Platform Foundation
+
+
+Milestone 2
+
+AI Agent Runtime
+
+
+Milestone 3
+
+Enterprise AI Capability
+
+```
+
+
+目标：
+
+完成企业AI平台核心能力。
+
+
+---
+
+# Phase 3
+
+# Production Evolution
+
+
+包含：
+
+
+```
+Milestone 4
+
+Production Platform
+
+
+Milestone 5
+
+AI Ecosystem
+
+```
+
+
+目标：
+
+达到生产级并形成生态。
+
+
+---
+
+# 6. Milestone Roadmap
+
+
+---
+
+# Milestone 0
+
+# Engineering Foundation
+
+
+## Goal
+
+
+建立企业级项目工程基础。
+
+
+---
+
+## Scope
+
+
+### Repository
+
+
+建立：
+
+- Monorepo
+- Git Workflow
+- Documentation System
+
+
+---
+
+### Frontend Foundation
+
+
+技术：
+
+
+```
+Vue 3
+
+TypeScript
+
+Vite
+
+Pinia
+
+Vue Router
+
+TailwindCSS
+
+```
+
+
+---
+
+### Backend Foundation
+
+
+技术：
+
+
+```
+Python 3.12
+
+uv
 
 FastAPI
 
-↓
+SQLAlchemy
 
-LLM Service
-
-↓
-
-Supervisor Agent
-
-↓
-
-Knowledge Agent
-
-Business Agent
-
-Document Agent
-
-↓
-
-RAG
-
-↓
-
-Vector Database
-
-↓
-
-Enterprise Tools
-```
-
----
-
-# 六、项目目录（最终形态）
+Pydantic
 
 ```
-enterprise-ai-agent-platform
 
-apps/
-├── web
-└── api
 
-packages/
-├── agent-core
-├── rag-core
-├── shared
-├── ui
-└── observer
+---
 
-docs/
-├── prd
-├── architecture
-├── api
-├── database
-├── adr
-└── roadmap
+### Infrastructure Foundation
 
-docker/
 
-scripts/
+建立：
 
-tests/
 
-.github/
+```
+Docker
 
-README.md
+PostgreSQL
+
+Redis
+
+Qdrant
+
 ```
 
----
-
-# 七、开发原则
-
-## 原则一
-
-先理解，再编码。
 
 ---
 
-## 原则二
+### Engineering Workflow
 
-每一个阶段都必须可运行。
 
----
+建立：
 
-## 原则三
+- Coding Standard
+- Testing Strategy
+- CI Pipeline
+- Development Workflow
 
-先实现底层原理，再引入框架。
-
----
-
-## 原则四
-
-所有模块可扩展。
 
 ---
 
-## 原则五
+## Deliverables
 
-所有代码都有文档。
 
----
+完成：
 
-# 八、Milestone 规划
 
-## Milestone 1
+- 项目仓库；
+- 前端基础工程；
+- 后端基础工程；
+- 本地开发环境；
+- 工程规范。
 
-项目初始化
-
-内容：
-
-- Monorepo
-- Vue
-- FastAPI
-- Docker
-- Git
-
-交付：
-
-可运行项目。
 
 ---
 
-## Milestone 2
+## Acceptance Criteria
 
-AI Chat
 
-内容：
+满足：
 
-- Chat
-- Streaming
-- Markdown
-- History
+- 前端可以启动；
+- 后端可以启动；
+- 数据库可连接；
+- Docker环境可运行；
+- Git流程可用。
 
----
-
-## Milestone 3
-
-用户系统
-
-内容：
-
-- 登录
-- JWT
-- 权限
 
 ---
 
-## Milestone 4
+# Milestone 1
 
-RAG
+# Core Platform Foundation
 
-内容：
 
-- 上传
-- 切片
-- Embedding
-- 检索
+## Goal
 
----
 
-## Milestone 5
+构建EAAP核心平台能力。
 
-Knowledge Agent
 
 ---
 
-## Milestone 6
+## Features
 
-LangGraph Workflow
 
----
+## User System
 
-## Milestone 7
-
-Business Agent
-
----
-
-## Milestone 8
-
-Tool Calling
-
----
-
-## Milestone 9
-
-Document Agent
-
----
-
-## Milestone 10
-
-企业后台
-
----
-
-## Milestone 11
-
-Multi-Agent
-
----
-
-## Milestone 12
-
-A2A
-
----
-
-## Milestone 13
-
-MCP
-
----
-
-## Milestone 14
-
-Observability
-
----
-
-## Milestone 15
-
-企业部署
 
 包括：
 
-- Docker Compose
-- Nginx
-- HTTPS
-- CI/CD
+- 用户认证；
+- 用户管理；
+- 权限基础。
+
 
 ---
 
-# 九、每个 Milestone 的固定交付物
+## Organization System
 
-每完成一个阶段，必须提交：
 
-- 功能代码
-- 单元测试
-- API 文档
-- 架构图
-- 数据库变更
-- Git Tag
-- Release Note
+包括：
+
+- 企业组织；
+- 部门；
+- 角色。
+
 
 ---
 
-# 十、文档体系
+## Agent Management
 
-项目开发过程中持续维护：
 
-## 产品
+包括：
 
-- PRD
-- Roadmap
+- Agent创建；
+- Agent配置；
+- Agent生命周期管理。
 
----
-
-## 技术
-
-- 架构设计
-- 数据库设计
-- API设计
-- Agent设计
 
 ---
 
-## 工程
+## Knowledge Base
 
-- ADR
-- Coding Style
-- Git Workflow
-- Commit Convention
 
----
+包括：
 
-## 学习
+- 文档上传；
+- 文档解析；
+- Embedding；
+- 向量检索基础。
 
-- 每周总结
-- 技术博客
-- 面试题总结
 
 ---
 
-# 十一、Git 规范
+## Tool Management
 
-分支：
+
+包括：
+
+- Tool注册；
+- Tool管理；
+- Tool权限。
+
+
+---
+
+## Deliverable
+
+
+第一个可运行企业AI平台。
+
+
+---
+
+# Milestone 2
+
+# AI Agent Runtime
+
+
+## Goal
+
+
+构建企业级Agent运行引擎。
+
+
+---
+
+## Features
+
+
+## Agent Execution Engine
+
+
+流程：
+
 
 ```
-main
+Input
 
-develop
+↓
 
-feature/*
+Planning
 
-release/*
+↓
 
-hotfix/*
+Reasoning
+
+↓
+
+Tool Calling
+
+↓
+
+Memory
+
+↓
+
+Response
+
 ```
 
-Commit：
+
+---
+
+## Memory System
+
+
+包括：
+
+
+- Short Term Memory
+- Long Term Memory
+
+
+---
+
+## RAG Engine
+
+
+包括：
+
+- Retrieval
+- Context Management
+- Knowledge Injection
+
+
+---
+
+## Multi-Agent
+
+
+支持：
+
 
 ```
-feat:
+Agent
 
-fix:
+↓
 
-docs:
+Agent Collaboration
 
-refactor:
-
-test:
-
-chore:
 ```
 
----
-
-# 十二、质量保障
-
-测试：
-
-- Vitest
-- Playwright
-- Pytest
-
-代码质量：
-
-- ESLint
-- Oxlint
-- Ruff
-- Pyright
-
-CI：
-
-GitHub Actions
 
 ---
 
-# 十三、最终成果
+## A2A
 
-完成项目后，将拥有：
 
-## 产品成果
+实现：
 
-- 企业 AI Agent 平台
+Agent-to-Agent Communication。
 
----
 
-## 技术成果
+包括：
 
-- 完整企业级代码
 
----
+- Agent Discovery；
+- Agent Communication；
+- Agent Collaboration。
 
-## 工程成果
-
-- 企业研发流程实践
 
 ---
 
-## 文档成果
+# Milestone 3
 
-- 完整设计文档
+# Enterprise AI Capability
 
----
 
-## GitHub成果
+## Goal
 
-- 企业级开源项目
 
----
+支持企业真实业务。
 
-## 求职成果
-
-可用于：
-
-- 国内 AI Agent 工程师岗位
-- 日本 AI 应用工程师岗位
-- 企业 AI 平台开发岗位
 
 ---
 
-# 十四、项目成功标准（Definition of Success）
+## Features
 
-当满足以下条件时，认为项目达到目标：
 
-## 产品
+### AI Workflow
 
-- 完整 AI Agent 平台可运行
 
-## 技术
+支持：
 
-- 支持 Chat、RAG、Tool Calling、Workflow、Multi-Agent、A2A、MCP
+- 自动化流程；
+- 多步骤任务。
 
-## 工程
-
-- Docker 化部署
-- CI/CD 自动化
-- 完整测试体系
-- 完整文档体系
-
-## 个人成长
-
-具备：
-
-- 产品设计能力
-- 架构设计能力
-- 企业级开发能力
-- AI Agent 开发能力
-- 独立完成企业 AI 项目的能力
 
 ---
 
-> Build like an engineer.
->
-> Think like an architect.
->
-> Deliver like a product team.
+### Enterprise Assistant
+
+
+支持：
+
+- 企业智能助手；
+- 数据分析；
+- 自动报告。
+
+
+---
+
+### AI Search
+
+
+支持：
+
+- 企业语义搜索；
+- 知识发现。
+
+
+---
+
+### Evaluation Platform
+
+
+包括：
+
+- Prompt Evaluation；
+- Agent Evaluation；
+- Model Evaluation。
+
+
+---
+
+# Milestone 4
+
+# Production Platform
+
+
+## Goal
+
+
+达到企业生产标准。
+
+
+---
+
+## Features
+
+
+### Security
+
+
+包括：
+
+- SSO；
+- RBAC；
+- Audit Log。
+
+
+---
+
+### Observability
+
+
+包括：
+
+- Logging；
+- Metrics；
+- Tracing。
+
+
+---
+
+### High Availability
+
+
+包括：
+
+- Kubernetes；
+- Scaling；
+- Disaster Recovery。
+
+
+---
+
+### Cost Management
+
+
+包括：
+
+- Token统计；
+- 模型成本分析；
+- 成本优化。
+
+
+---
+
+### AI Governance
+
+
+包括：
+
+- Agent治理；
+- Prompt治理；
+- Model治理。
+
+
+---
+
+# Milestone 5
+
+# AI Ecosystem
+
+
+## Goal
+
+
+形成AI平台生态。
+
+
+---
+
+## Features
+
+
+### Agent Marketplace
+
+
+支持：
+
+- Agent发布；
+- Agent共享。
+
+
+---
+
+### Developer Platform
+
+
+提供：
+
+- SDK；
+- API；
+- Plugin。
+
+
+---
+
+### AI Optimization
+
+
+包括：
+
+- 自动模型选择；
+- 自动成本优化；
+- AI运维。
+
+
+---
+
+# 7. MVP Definition
+
+
+EAAP MVP不是Milestone 0。
+
+
+MVP目标：
+
+完成：
+
+```
+Milestone 1
+
++
+
+部分Milestone 2能力
+
+```
+
+
+MVP具备：
+
+
+- 用户系统；
+- Agent管理；
+- Knowledge Base；
+- 基础RAG；
+- 单Agent运行。
+
+
+---
+
+# 8. Technology Strategy
+
+
+## Frontend
+
+
+```
+Vue 3
+
+TypeScript
+
+Vite
+
+Pinia
+
+Vue Router
+
+TailwindCSS
+
+Vitest
+
+Playwright
+
+```
+
+
+---
+
+## Backend
+
+
+```
+Python 3.12
+
+uv
+
+FastAPI
+
+SQLAlchemy
+
+Pydantic
+
+```
+
+
+---
+
+## AI
+
+
+```
+LLM
+
+Agent Runtime
+
+RAG
+
+Memory
+
+Tool Calling
+
+Multi-Agent
+
+A2A
+
+```
+
+
+---
+
+## Infrastructure
+
+
+```
+Docker
+
+PostgreSQL
+
+Redis
+
+Qdrant
+
+Kubernetes
+
+CI/CD
+
+```
+
+
+---
+
+# 9. Documentation Governance
+
+
+所有项目文档：
+
+```
+docs/
+
+
+├── 00-master
+
+├── 01-product
+
+├── 02-architecture
+
+├── 03-development
+
+└── 04-operation
+
+```
+
+
+---
+
+核心管理文件：
+
+
+```
+EAAP_STATUS.md
+
+PROJECT_CHANGELOG.md
+
+```
+
+
+---
+
+# 10. Version Management
+
+
+版本规则：
+
+
+```
+Major.Minor.Patch
+
+
+```
+
+
+例如：
+
+
+```
+V1.0
+
+项目规划版本
+
+
+V1.1
+
+规划调整
+
+
+V2.0
+
+重大架构变化
+
+```
+
+
+---
+
+# 11. Current Status
+
+
+Current Phase:
+
+
+```
+Phase 1
+
+Foundation
+
+```
+
+
+Current Milestone:
+
+
+```
+Milestone 0
+
+Engineering Foundation
+
+```
+
+
+Current Step:
+
+
+```
+Project Documentation Completion
+
+```
+
+
+---
+
+# 12. Long Term Vision
+
+
+EAAP最终目标：
+
+
+成为：
+
+
+```
+Enterprise AI Agent Operating Platform
+
+```
+
+
+支持企业：
+
+- 创建Agent；
+- 管理Agent；
+- 运行Agent；
+- 协作Agent；
+- 治理Agent。
+
+
+---
+
+# Version History
+
+
+| Version | Date | Description |
+|---|---|---|
+| V1.0 | 2026-07 | Initial Master Plan |
