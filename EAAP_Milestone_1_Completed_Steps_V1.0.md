@@ -59,9 +59,9 @@ Agent 调用模型和工具完成任务
  Qdrant
 
  ```
-# 2. complete steps
 
- ## 2.1 Backend Architecture Refinement
+
+Step 1.1 Backend Architecture Refinement
 目标
 
 把当前 FastAPI 改造成企业后端架构。
@@ -74,7 +74,7 @@ Dependency Injection
 
 具体操作顺序：
 
-2.1.1 安装依赖
+1.1.1 安装依赖
 
 uv add sqlalchemy asyncpg alembic psycopg2-binary
 
@@ -88,7 +88,7 @@ asyncpg 负责异步访问 PostgreSQL；SQLAlchemy 用模型定义表结构，�
 
 -psycopg2-binary:Postgres 的同步驱动，搭配alembic使用
 
-2.1.2调整 apps/api/app 目录结构
+1.1.2调整 apps/api/app 目录结构
 
 py文件的代码此处就不展示了
 
@@ -101,10 +101,10 @@ apps/api
     │
     ├── core
     │   ├── __init__.py
-    │   ├── config.py
-    │   ├── database.py
-    │   ├── logging.py
-    │   └── lifespan.py
+    │   ├── config.py +
+    │   ├── database.py +
+    │   ├── logging.py +
+    │   └── lifespan.py +
     │
     ├── api
     │   ├── __init__.py
@@ -113,7 +113,9 @@ apps/api
     │       └── health.py
     │
     ├── models
-    │   └── __init__.py
+    │   ├── __init__.py
+    │   ├── base.py +
+    │   └── user.py +
     │
     ├── schemas
     │   └── __init__.py
@@ -128,7 +130,7 @@ apps/api
         └── __init__.py
 
 
-2.1.3 Alembic 数据库迁移初始化
+1.1.3 Alembic 数据库迁移初始化
 
 cd apps/api
 
@@ -143,7 +145,7 @@ apps/api
 │
 └── app
 
-2.1.4 创建第一个数据库 Model
+sqlalchemy asyncpg alembic psycopg2-binary的详细使用说明请参考：EAAP_DATABASE_USE.md
 
 
 Step 1.2 Database Foundation
