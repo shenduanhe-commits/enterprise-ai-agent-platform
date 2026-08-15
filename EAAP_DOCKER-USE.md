@@ -118,6 +118,7 @@ Qdrant（基础设施）      uv（后端 API）
 ## 八、最小日常清单
 
 ```powershell
+docker info #看 Docker 引擎本身是否在跑
 # 第一次 / 日常启动
 copy .env.example .env   # 若还没有 .env
 docker compose up -d

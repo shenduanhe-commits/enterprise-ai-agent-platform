@@ -81,7 +81,7 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 
 ## 5. 下一步
 
-只做 **R0**，不要并行开 LangGraph 或 RAG：
+分支：`feature/r0-runtime-hardening`（GitHub Flow，合入 `main`）。只做 **R0**，不要并行开 LangGraph 或 RAG：
 
 1. 所有 Provider 统一解析 `tool_calls`。
 2. calculator 带真实 schema。

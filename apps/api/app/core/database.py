@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -20,14 +22,14 @@ DATABASE_URL = settings.DATABASE_URL.replace(
 engine = create_async_engine(DATABASE_URL, echo=True)
 
 """
- 创建数据库会话
+ 创建数据库会话工厂
 """
 AsyncSessionLocal = async_sessionmaker(
     bind=engine, class_=AsyncSession, expire_on_commit=False
 )
 
 
-async def get_db():
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     获取数据库会话
     """

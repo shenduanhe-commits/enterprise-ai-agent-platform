@@ -39,6 +39,9 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str | None = None
 
+    QWEN_API_KEY: str | None = None
+    QWEN_BASE_URL: str | None = None
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env", env_file_encoding="utf-8"
     )

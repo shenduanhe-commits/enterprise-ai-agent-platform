@@ -147,363 +147,137 @@ apps/api
 
 sqlalchemy asyncpg alembic psycopg2-binary的详细使用说明请参考：EAAP_DATABASE_USE.md
 
-
-Step 1.2 Database Foundation
+Step 1.2 创建 Pydantic Schema Layer
 目标
 
-建立企业数据层。
+建立：
 
-技术：
+apps/api/app/schemas
+│
+└── user.py
 
-PostgreSQL
-SQLAlchemy 2.0
-Alembic
+Schema 层负责：
 
-完成：
+Request JSON
+      |
+      ↓
+Pydantic Schema
+      |
+      ↓
+Service
+      |
+      ↓
+SQLAlchemy Model
+      |
+      ↓
+Database
 
-数据库连接：
+不要让 API 直接暴露数据库 Model。
 
-FastAPI
+-Pydantic Schema:用 Pydantic 的 BaseModel 定义的数据结构，用来描述、校验和转换 API 的请求/响应 JSON。
+Request JSON → Pydantic Schema → Service → SQLAlchemy Model → Database
 
-↓
-
-SQLAlchemy
-
-↓
-
-PostgreSQL
-
-建立基础表：
-
-User
-
-用户
-
-users
-
-id
-email
-password_hash
-created_at
-Agent
-
-Agent定义
-
-agents
-
-id
-name
-description
-model
-config
-created_by
-Conversation
-
-对话记录
-
-conversations
-
-id
-user_id
-agent_id
-messages
-created_at
-Step 1.3 Authentication System
+Step 1.3 创建 Repository Layer
 目标
 
-让平台有用户体系。
+实现数据库访问层。
 
-完成：
+apps/api/app
 
-注册
-POST /auth/register
-登录
-POST /auth/login
+├── core
+│   ├── config.py
+│   ├── database.py
+│   └── dependencies.py        ← 新增
+├── repositories              ← 新增
+│   ├── __init__.py
+│   └── user_repository.py
 
-返回：
-
-{
- "access_token":"xxx"
-}
-
-实现：
-
-JWT
-Password Hash
-User Session
-
-学习：
-
-企业 SaaS 基础能力。
-
-Step 1.4 Model Gateway
-目标
-
-建立统一模型访问层。
-
-为什么需要？
-
-错误设计：
-
-Agent
-
-↓
-
-OpenAI API
-
-以后换 Claude：
-
-全部修改。
-
-正确：
-
-Agent
-
-↓
-
-Model Gateway
-
-↓
-
-Provider Adapter
-
-↓
-
-OpenAI
-Claude
-Gemini
-Local Model
-
-完成：
-
-统一接口：
-
-class LLMClient:
-
-    async def chat(
-        messages
-    ):
-        pass
-
-支持：
-
-第一阶段：
-
-OpenAI Compatible API
-
-后续：
-
-Claude
-Gemini
-Ollama
-Step 1.5 Agent Runtime Core
-目标
-
-实现真正 Agent 执行。
-
-核心：
-
-Agent Runtime
-
-包含：
-
-Agent Definition
-
-例如：
-
-{
-"name":"Research Agent",
-
-"role":"分析师",
-
-"tools":[
- "search"
-]
-}
-Task Execution
-
-流程：
-
-Request
-
-↓
-
-Agent Runtime
-
-↓
-
-Planning
-
-↓
-
-Tool Calling
-
-↓
-
-LLM
-
-↓
-
-Response
-
-第一版不追求复杂。
-
-先实现：
-
-Input
-
-↓
-
-LLM
-
-↓
-
-Output
-
-然后逐步增加：
-
-Planning
-Reflection
-Memory
-Step 1.6 Tool System
-目标
-
-让 Agent 使用工具。
 
 架构：
 
-Agent
+API Router
+    |
+    ↓
+Service Layer
+    |
+    ↓
+Repository Layer
+    |
+    ↓
+SQLAlchemy
+    |
+    ↓
+PostgreSQL
 
-↓
 
-Tool Registry
+Repository 专门负责：
 
-↓
+"怎么从数据库拿数据"
 
-Tools
+Service 专门负责：
 
-├── Search Tool
-├── Calculator Tool
-├── File Tool
-└── API Tool
+"业务逻辑是什么"
 
-完成：
+Step 1.4 Service Layer
 
-Tool接口：
+目标：
 
-class Tool:
+建立：
 
-    name:str
+API
+ |
+ ↓
+Service Layer
+ |
+ ↓
+Repository Layer
+ |
+ ↓
+Database
 
-    async execute():
-        pass
+cd apps/api/app
+创建：
+services/__init__.py
 
-实现第一个：
+services/user_service.py
 
-Calculator Tool
+Step 1.5：API Router
+把内部代码暴露成真正 HTTP API。
+目标：
 
-原因：
+实现：
 
-简单验证 Agent → Tool 调用链。
+POST /api/v1/users
 
-Step 1.7 Memory System
-目标
+GET /api/v1/users/{id}
 
-让 Agent 有上下文。
+最终：
 
-三层：
+打开：
 
-Memory
+http://localhost:8000/docs
 
-├── Conversation Memory
-│
-├── User Memory
-│
-└── Vector Memory
+看到：
 
-使用：
+Users
 
-Redis:
+POST /api/v1/users
 
-短期状态
+GET /api/v1/users/{user_id}
 
-PostgreSQL:
+并可以直接测试。
 
-历史记录
 
-Qdrant:
+进入：
 
-语义记忆
-Step 1.8 RAG Foundation
-目标
+cd apps/api/app
 
-让 Agent 可以使用企业知识。
+创建routers/users.py
 
-完成：
+结构：
 
-基础 RAG：
+app
 
-Document
-
-↓
-
-Chunk
-
-↓
-
-Embedding
-
-↓
-
-Qdrant
-
-↓
-
-Retrieve
-
-↓
-
-LLM
-
-支持：
-
-上传：
-
-PDF
-Markdown
-TXT
-Step 1.9 Agent API
-
-最终提供：
-
-创建 Agent
-POST /api/v1/agents
-执行 Agent
-POST /api/v1/agents/{id}/run
-
-请求：
-
-{
-"message":
-"帮我分析这个文档"
-}
-
-返回：
-
-{
-"result":
-"..."
-}
-Milestone 1 完成后的能力
-
-完成后 EAAP 将具备：
-
-能力	状态
-用户系统	✅
-数据库	✅
-模型抽象层	✅
-Agent运行引擎	✅
-工具调用	✅
-记忆系统	✅
-基础RAG	✅
-Agent API	✅
+├── routers
+│   ├── __init__.py
+│   └── users.py
