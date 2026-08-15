@@ -1,8 +1,8 @@
 import asyncio
 
 from app.core.database import AsyncSessionLocal
+from app.core.security import hash_password
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserCreate
 
 
 async def main():
@@ -11,7 +11,9 @@ async def main():
         repo = UserRepository()
 
         user = await repo.create(
-            db, UserCreate(email="admin@eaap.com", password_hash="test")
+            db,
+            email="admin@eaap.com",
+            password_hash=hash_password("plaintext1"),
         )
 
         print(user.id)

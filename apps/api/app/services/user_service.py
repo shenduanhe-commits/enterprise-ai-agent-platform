@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BusinessException, NotFoundException
+from app.core.security import hash_password
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserResponse
 
@@ -20,9 +21,12 @@ class UserService:
         if existing_user:
             raise BusinessException("邮箱已经存在")
 
-        # 创建用户
-
-        user = await self.repository.create(db, user_data)
+        # 哈希放在 Service：API 只收明文，库里只存 password_hash。
+        user = await self.repository.create(
+            db,
+            email=user_data.email,
+            password_hash=hash_password(user_data.password),
+        )
 
         # ORM Model 转 Response Schema
 

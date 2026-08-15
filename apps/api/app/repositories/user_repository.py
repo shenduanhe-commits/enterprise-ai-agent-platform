@@ -2,7 +2,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
-from app.schemas.user import UserCreate
 
 
 class UserRepository:
@@ -10,12 +9,11 @@ class UserRepository:
     User Repository
     """
 
-    async def create(self, db: AsyncSession, user: UserCreate) -> User:
+    async def create(self, db: AsyncSession, email: str, password_hash: str) -> User:
         """
-        Create a new user
+        Create a new user. password_hash 必须已由 Service 算好。
         """
-        # 用 UserCreate 里的字段新建一个 SQLAlchemy User 对象。此时只在内存里，还没有进数据库，id、created_at 通常也还没有。
-        db_user = User(email=user.email, password_hash=user.password_hash)
+        db_user = User(email=email, password_hash=password_hash)
         # 把对象放进当前 Session 的待写入队列（pending），还没有真正执行 SQL。
         db.add(db_user)
         # 提交事务：执行 INSERT，把数据写入 PostgreSQL，并结束事务。

@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr
 # 创建用户请求
 class UserCreate(BaseModel):
     email: EmailStr
-    password_hash: str
+    password: str
 
 
 # 用户响应

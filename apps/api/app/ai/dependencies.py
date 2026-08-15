@@ -9,6 +9,9 @@ from app.ai.llm.gateway import (
 from app.ai.llm.providers.anthropic import (
     AnthropicProvider,
 )
+from app.ai.llm.providers.mock import (
+    MockLLMProvider,
+)
 from app.ai.llm.providers.openai import (
     OpenAIProvider,
 )
@@ -35,8 +38,9 @@ from app.repositories.prompt_repository import PromptRepository
 
 
 def get_llm_gateway() -> LLMGateway:
-
-    providers = {}
+    # mock 始终注册：没 API Key 也能测 Chat / 工具循环。
+    # Agent.provider 填 "mock" 时 Gateway 才能找到，否则是 Unsupported provider。
+    providers = {"mock": MockLLMProvider()}
 
     if settings.QWEN_API_KEY and settings.QWEN_BASE_URL:
         providers["qwen"] = QwenProvider(settings.QWEN_API_KEY, settings.QWEN_BASE_URL)

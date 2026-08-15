@@ -12,7 +12,7 @@ async def main():
         service = UserService(UserRepository())
 
         user = await service.create_user(
-            db, UserCreate(email="service@eaap.com", password_hash="test")
+            db, UserCreate(email="service@eaap.com", password="plaintext1")
         )
 
         print(user)
