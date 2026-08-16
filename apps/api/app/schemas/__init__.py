@@ -1,7 +1,7 @@
 from .agent import AgentCreate, AgentResponse
 from .chat import ChatRequest, ChatResponse
 from .conversation_message import ConversationMessageCreate, ConversationMessageResponse
-from .user import UserCreate, UserResponse
+from .user import TokenResponse, UserCreate, UserLogin, UserResponse
 
 __all__ = [
     "AgentCreate",
@@ -10,6 +10,8 @@ __all__ = [
     "ChatResponse",
     "ConversationMessageCreate",
     "ConversationMessageResponse",
+    "TokenResponse",
     "UserCreate",
+    "UserLogin",
     "UserResponse",
 ]

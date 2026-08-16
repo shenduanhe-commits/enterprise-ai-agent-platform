@@ -50,6 +50,22 @@ class AlwaysToolLLMProvider(BaseLLMProvider):
         )
 
 
+class ScriptedLLMProvider(BaseLLMProvider):
+    def __init__(self, responses: list[AIMessage]):
+        self.responses = list(responses)
+        self.index = 0
+
+    async def chat(
+        self,
+        model: str,
+        messages: list[AIMessage],
+        tools: list[dict] | None = None,
+    ) -> AIMessage:
+        response = self.responses[min(self.index, len(self.responses) - 1)]
+        self.index += 1
+        return response
+
+
 @pytest.mark.asyncio
 async def test_run_loop_returns_text_without_tools():
     result = await _executor(MockLLMProvider()).run_loop(
@@ -69,6 +85,36 @@ async def test_run_loop_executes_calculator():
     )
 
     assert result.content == "计算结果是 89"
+
+
+@pytest.mark.asyncio
+async def test_run_loop_unknown_tool_does_not_crash():
+    executor = _executor(
+        ScriptedLLMProvider(
+            [
+                AIMessage(
+                    role="assistant",
+                    tool_calls=[
+                        {
+                            "id": "call_1",
+                            "function": {
+                                "name": "not_a_real_tool",
+                                "arguments": "{}",
+                            },
+                        }
+                    ],
+                ),
+                AIMessage(role="assistant", content="tool was missing"),
+            ]
+        )
+    )
+
+    result = await executor.run_loop(
+        _agent(),
+        [AIMessage(role="user", content="do something")],
+    )
+
+    assert result.content == "tool was missing"
 
 
 @pytest.mark.asyncio

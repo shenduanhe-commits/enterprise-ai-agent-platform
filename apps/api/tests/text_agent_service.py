@@ -16,10 +16,11 @@ async def main():
             AgentCreate(
                 name="客服助手",
                 description="企业客服 Agent",
+                provider="mock",
                 model_name="gpt-5",
                 system_prompt="你是客服专家",
-                created_by=1,
             ),
+            user_id=1,
         )
 
         print(agent)

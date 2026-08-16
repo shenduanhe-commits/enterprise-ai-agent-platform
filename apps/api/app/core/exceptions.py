@@ -23,6 +23,11 @@ class BusinessException(EAAPException):
         super().__init__(400, message, code)
 
 
+class UnauthorizedException(EAAPException):
+    def __init__(self, message: str = "Unauthorized", code: int = 401):
+        super().__init__(401, message, code)
+
+
 class AgentRuntimeException(EAAPException):
     def __init__(self, message: str = "Agent runtime error", code: int = 500):
         super().__init__(500, message, code)

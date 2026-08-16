@@ -18,9 +18,11 @@ class ConversationService:
 
     # 获取对话
     async def get_conversation(
-        self, db: AsyncSession, conversation_id: int
+        self, db: AsyncSession, conversation_id: int, user_id: int
     ) -> ConversationResponse:
-        conversation = await self.repository.get_by_id(db, conversation_id)
+        conversation = await self.repository.get_by_id(
+            db, conversation_id, user_id=user_id
+        )
         if not conversation:
             raise NotFoundException("对话不存在")
         return ConversationResponse.model_validate(conversation)

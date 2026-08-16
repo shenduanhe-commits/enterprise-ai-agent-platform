@@ -14,8 +14,6 @@ class AgentCreate(BaseModel):
 
     system_prompt: str
 
-    created_by: int
-
 
 class AgentResponse(BaseModel):
     id: int

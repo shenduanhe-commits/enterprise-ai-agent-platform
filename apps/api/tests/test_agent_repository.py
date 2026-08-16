@@ -15,16 +15,17 @@ async def main():
             AgentCreate(
                 name="合同审查助手",
                 description="分析企业合同风险",
+                provider="mock",
                 model_name="gpt-5",
                 system_prompt="你是一名专业合同律师",
-                created_by=1,
             ),
+            created_by=1,
         )
 
         print(agent.id)
         print(agent.name)
 
-        agents = await repository.get_all(db)
+        agents = await repository.get_all(db, user_id=1)
 
         print(len(agents))
 

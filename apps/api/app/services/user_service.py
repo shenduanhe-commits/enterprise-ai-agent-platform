@@ -1,9 +1,15 @@
+import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import BusinessException, NotFoundException
-from app.core.security import hash_password
+from app.core.config import settings
+from app.core.exceptions import (
+    BusinessException,
+    NotFoundException,
+    UnauthorizedException,
+)
+from app.core.security import create_access_token, hash_password, verify_password
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserResponse
 
 
 class UserService:
@@ -32,7 +38,8 @@ class UserService:
 
         return UserResponse.model_validate(user)
 
-    async def get_user(self, db: AsyncSession, user_id: int) -> UserResponse:
+    # 根据 ID 获取用户
+    async def get_user_by_id(self, db: AsyncSession, user_id: int) -> UserResponse:
 
         user = await self.repository.get_by_id(db, user_id)
 
@@ -41,8 +48,51 @@ class UserService:
 
         return UserResponse.model_validate(user)
 
+    # 根据邮箱获取用户
+    async def get_user_by_email(self, db: AsyncSession, email: str) -> UserResponse:
+        user = await self.repository.get_by_email(db, email)
+        if not user:
+            raise NotFoundException("用户不存在")
+        return UserResponse.model_validate(user)
+
+    # 根据 token 获取用户
+    async def get_user_by_token(self, db: AsyncSession, token: str) -> UserResponse:
+        try:
+            payload = jwt.decode(
+                token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
+            )
+
+            try:
+                user_id = int(payload.get("sub"))
+            except (TypeError, ValueError) as e:
+                raise UnauthorizedException("Token 无效") from e
+
+            user = await self.repository.get_by_id(db, user_id)
+
+            if not user:
+                raise UnauthorizedException("用户不存在")
+            return UserResponse.model_validate(user)
+        except jwt.ExpiredSignatureError:
+            raise UnauthorizedException("Token 过期")
+        except jwt.InvalidTokenError:
+            raise UnauthorizedException("Token 无效")
+
+    # 获取所有用户
     async def get_users(self, db: AsyncSession) -> list[UserResponse]:
 
         users = await self.repository.get_all(db)
 
         return [UserResponse.model_validate(user) for user in users]
+
+    # 登录
+    async def login(self, db: AsyncSession, login_data: UserLogin) -> TokenResponse:
+        user = await self.repository.get_by_email(db, login_data.email)
+
+        if not user or not verify_password(user.password_hash, login_data.password):
+            raise BusinessException("邮箱或密码错误")
+
+        return TokenResponse(
+            access_token=create_access_token(user.id),
+            token_type="bearer",
+            user=UserResponse.model_validate(user),
+        )
