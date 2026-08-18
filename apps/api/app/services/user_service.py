@@ -1,13 +1,18 @@
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.exceptions import (
     BusinessException,
     NotFoundException,
     UnauthorizedException,
 )
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserResponse
 
@@ -55,12 +60,20 @@ class UserService:
             raise NotFoundException("用户不存在")
         return UserResponse.model_validate(user)
 
+    def _tokens_for(self, user) -> TokenResponse:
+        return TokenResponse(
+            access_token=create_access_token(user.id),
+            refresh_token=create_refresh_token(user.id),
+            token_type="bearer",
+            user=UserResponse.model_validate(user),
+        )
+
     # 根据 token 获取用户
     async def get_user_by_token(self, db: AsyncSession, token: str) -> UserResponse:
         try:
-            payload = jwt.decode(
-                token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
-            )
+            payload = decode_token(token)
+            if payload.get("typ") not in (None, "access"):
+                raise UnauthorizedException("Token 无效")
 
             try:
                 user_id = int(payload.get("sub"))
@@ -72,6 +85,32 @@ class UserService:
             if not user:
                 raise UnauthorizedException("用户不存在")
             return UserResponse.model_validate(user)
+        except UnauthorizedException:
+            raise
+        except jwt.ExpiredSignatureError:
+            raise UnauthorizedException("Token 过期")
+        except jwt.InvalidTokenError:
+            raise UnauthorizedException("Token 无效")
+
+    async def refresh_tokens(
+        self, db: AsyncSession, refresh_token: str
+    ) -> TokenResponse:
+        try:
+            payload = decode_token(refresh_token)
+            if payload.get("typ") != "refresh":
+                raise UnauthorizedException("Token 无效")
+
+            try:
+                user_id = int(payload.get("sub"))
+            except (TypeError, ValueError) as e:
+                raise UnauthorizedException("Token 无效") from e
+
+            user = await self.repository.get_by_id(db, user_id)
+            if not user:
+                raise UnauthorizedException("用户不存在")
+            return self._tokens_for(user)
+        except UnauthorizedException:
+            raise
         except jwt.ExpiredSignatureError:
             raise UnauthorizedException("Token 过期")
         except jwt.InvalidTokenError:
@@ -89,10 +128,6 @@ class UserService:
         user = await self.repository.get_by_email(db, login_data.email)
 
         if not user or not verify_password(user.password_hash, login_data.password):
-            raise BusinessException("邮箱或密码错误")
+            raise UnauthorizedException("邮箱或密码错误")
 
-        return TokenResponse(
-            access_token=create_access_token(user.id),
-            token_type="bearer",
-            user=UserResponse.model_validate(user),
-        )
+        return self._tokens_for(user)

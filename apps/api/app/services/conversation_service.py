@@ -29,9 +29,9 @@ class ConversationService:
 
     # 获取所有对话
     async def get_all_conversations(
-        self, db: AsyncSession, agent_id: int, user_id: int
+        self, db: AsyncSession, user_id: int, agent_id: int | None = None
     ) -> list[ConversationResponse]:
-        conversations = await self.repository.get_all(db, agent_id, user_id)
+        conversations = await self.repository.get_all(db, user_id, agent_id)
         return [
             ConversationResponse.model_validate(conversation)
             for conversation in conversations

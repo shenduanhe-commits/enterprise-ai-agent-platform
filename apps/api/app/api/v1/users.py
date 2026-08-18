@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.dependencies import CurrentUser, DbSession
+from app.core.exceptions import NotFoundException
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserResponse
 from app.services.user_service import UserService
@@ -23,6 +24,7 @@ async def get_me(current_user: CurrentUser):
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int, current_user: CurrentUser, db: DbSession):
-
-    return await user_service.get_user_by_id(db, user_id)
+async def get_user(user_id: int, current_user: CurrentUser):
+    if user_id != current_user.id:
+        raise NotFoundException("用户不存在")
+    return current_user

@@ -51,7 +51,7 @@ RAG / Eval / Observability ~25%
 
 ### R1 后端产品面
 
-- JWT access + refresh；依赖注入拿当前用户。
+- JWT access + refresh；依赖注入拿当前用户（见 [JWT.md](../03-development/JWT.md)）。
 - FastAPI `StreamingResponse`、SSE 事件格式、客户端断开。
 - 统一错误体（见 [Request_Handle.md](../03-development/Request_Handle.md)）。
 

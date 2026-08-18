@@ -13,7 +13,7 @@ V1 覆盖 SSO、完整 RBAC、数据分级。V2 按阶段长，先达到「能�
 
 - 最小权限：用户、Agent、Tool 默认什么都不能做，再授权。
 - 默认拒绝：未绑定的工具对模型不可见。
-- 不信任客户端：R1 起身份只来自 JWT，不信 body 里的 `user_id` / `created_by`。
+- 不信任客户端：R1 起身份只来自 JWT，不信 body 里的 `user_id` / `created_by`。机制见 [JWT.md](../03-development/JWT.md)。
 - 可审计：改 Agent、HITL 批准、上传文档要留下谁做了什么（R6）。
 
 ---

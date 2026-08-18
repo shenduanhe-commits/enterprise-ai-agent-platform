@@ -27,7 +27,7 @@ V1 把 E2E/Playwright 放得很重。V2：**pytest 是主战场**；前端 E2E �
 - 能自动的必须自动。
 - LLM 单测默认 Mock Provider，不打真实付费 API（可另标 `@pytest.mark.live`）。
 - 测行为：工具是否被调用、是否超轮次、是否隔离用户；少测「模型文案是否优美」。
-- 现有测试文件名错误（`text_agent_service.py`）在 R0 改掉。
+- 测试文件必须是 `test_*.py`，且只放 pytest 用例。连库手写脚本用 `if __name__ == "__main__"` 保护，或移出 `tests/`。
 
 ---
 
@@ -54,8 +54,9 @@ R2 增加：同一用例 Graph vs legacy 工具序列一致；HITL 未 resume �
 
 ```bash
 cd apps/api
-uv run pytest
-uv run pytest apps/api/tests/test_agent_runtime.py -q
+uv run pytest tests/test_agent_runtime.py tests/test_agent_service.py tests/test_agent_schema.py tests/test_sse.py tests/test_prompt_manager.py tests/test_providers.py tests/test_user_service.py -q
 ```
+
+连库脚本不会在收集时执行。
 
 CI（R6）：ruff + pytest。无 Key 必须绿。

@@ -1,6 +1,7 @@
 from openai import APIError, AsyncOpenAI
 
 from app.ai.llm.providers.base import BaseLLMProvider
+from app.ai.llm.providers.openai_compat import parse_openai_chat_message
 from app.ai.type import AIMessage
 from app.core.exceptions import LLMException
 
@@ -33,26 +34,6 @@ class QwenProvider(BaseLLMProvider):
         except APIError as e:
             raise LLMException(f"Failed to chat with Qwen: {e}") from e
         try:
-            message = response.choices[0].message
-
-            tool_calls = None
-
-            if message.tool_calls:
-                tool_calls = [
-                    {
-                        "id": call.id,
-                        "function": {
-                            "name": call.function.name,
-                            "arguments": call.function.arguments,
-                        },
-                    }
-                    for call in message.tool_calls
-                ]
-
-            return AIMessage(
-                role=message.role,
-                content=message.content,
-                tool_calls=tool_calls,
-            )
+            return parse_openai_chat_message(response.choices[0].message)
         except Exception as e:
             raise LLMException(f"Failed to parse Qwen response: {e}") from e

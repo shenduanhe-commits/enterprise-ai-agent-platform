@@ -8,12 +8,14 @@
 
 ## 现在能做什么
 
-- 创建用户（密码在服务端 Argon2 哈希）
-- 创建 Agent，用 **Qwen** 或 **Mock** 对话
+- 创建用户（密码在服务端 Argon2 哈希）；`POST /api/v1/auth/register` 或 `/users`
+- 登录拿 JWT（access + refresh），Agent / Chat / 会话按用户隔离
+- 创建 Agent，用 **Qwen**、**OpenAI**、**Anthropic** 或 **Mock** 对话
 - Mock 下「12\*7+5」会走 calculator 工具循环
-- `run_loop` 有 pytest：无工具 / 有工具 / 超轮次
+- `POST /api/v1/agents/{id}/chat/stream` 推 SSE；可 `GET /conversations` 拉历史
+- pytest：runtime / provider / auth / prompt / sse
 
-还没有：登录 JWT、资源隔离、SSE 流式、知识库 / RAG。下一步是 **R1**。
+还没有：前端演示页、知识库 / RAG、LangGraph。下一步按 [STATUS.md](docs/v2/00-master/STATUS.md) 收口 R1 演示。
 
 进度与计划以文档为准，不要看 `docs/` 下的 V1 文件。
 
@@ -40,7 +42,7 @@
 | 后端 | Python 3.12 + FastAPI + uv |
 | 数据 | PostgreSQL 16、Redis 7、Qdrant |
 | Agent | 自研 `AgentExecutor`（R2 再上 LangGraph） |
-| LLM | Gateway：Qwen（可用）、Mock（测试）；OpenAI / Anthropic 未对齐 |
+| LLM | Gateway：Qwen / OpenAI / Anthropic / Mock |
 
 ---
 
@@ -63,16 +65,16 @@ uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - API：http://localhost:8000
 - Swagger：http://localhost:8000/docs
 
-Swagger 可走：`POST /api/v1/users` → `POST /api/v1/agents`（`provider` 填 `mock` 或 `qwen`）→ `POST /api/v1/agents/{id}/chat`。
+Swagger 可走：`POST /api/v1/auth/register` → `POST /api/v1/auth/login`（Authorize 填 access）→ `POST /api/v1/agents`（`provider` 填 `mock` 或 `qwen`）→ `POST /api/v1/agents/{id}/chat` 或 `/chat/stream`。
 
-工具循环单测（不连数据库）：
+不连数据库的单测：
 
 ```bash
 cd apps/api
-uv run pytest tests/test_agent_runtime.py -q
+uv run pytest tests/test_agent_runtime.py tests/test_agent_service.py tests/test_agent_schema.py tests/test_sse.py tests/test_prompt_manager.py tests/test_providers.py tests/test_user_service.py -q
 ```
 
-暂不要跑整个 `tests/`，里面还有会连库的手工脚本。
+`tests/` 里还有连库手写脚本，已用 `if __name__ == "__main__"` 保护；全量 pytest 不会执行它们。
 
 ---
 

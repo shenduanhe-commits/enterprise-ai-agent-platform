@@ -124,3 +124,41 @@ async def test_run_loop_exceeds_max_iterations():
             _agent(),
             [AIMessage(role="user", content="loop")],
         )
+
+
+async def _collect_stream(executor: AgentExecutor, user_message: str):
+    events: list[tuple[str, dict]] = []
+    async for event in executor.stream_loop(
+        _agent(),
+        [AIMessage(role="user", content=user_message)],
+    ):
+        events.append(event)
+    return events
+
+
+@pytest.mark.asyncio
+async def test_stream_loop_chunks_plain_text():
+    events = await _collect_stream(_executor(MockLLMProvider()), "你好")
+    tokens = [data["text"] for event, data in events if event == "token"]
+
+    assert all(event == "token" for event, _ in events)
+    assert len(tokens) > 1
+    assert "Mock AI Response" in "".join(tokens)
+
+
+@pytest.mark.asyncio
+async def test_stream_loop_emits_tool_then_tokens():
+    events = await _collect_stream(_executor(MockLLMProvider()), "12*7+5 等于多少")
+    kinds = [event for event, _ in events]
+
+    assert kinds[:2] == ["tool", "tool"]
+    assert events[0][1] == {
+        "id": "call_calculator_1",
+        "name": "calculator",
+        "status": "start",
+    }
+    assert events[1][1]["status"] == "result"
+    assert events[1][1]["content"] == "89"
+    assert "".join(data["text"] for event, data in events if event == "token") == (
+        "计算结果是 89"
+    )
