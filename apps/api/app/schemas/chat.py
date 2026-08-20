@@ -4,8 +4,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ChatRequest(BaseModel):
-    agent_id: int
-    user_id: int
     conversation_id: int | None = None  # 如果为 None，则创建新对话
     variables: dict | None = None  # 如果为 None，则使用默认变量
     user_message: str

@@ -13,10 +13,9 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 ## 1. 约定
 
 - JSON；`Content-Type: application/json`。
-- R1 起：`Authorization: Bearer <access_token>`。
-- 成功：多数端点直接返回资源（现有 FastAPI `response_model`）。若将来包一层 `{ code, message, data }`，必须全站统一；**不要混用两套**。当前代码是直接返回模型，V2 维持这一点。
+- 需登录的接口：`Authorization: Bearer <access_token>`。签发与校验见 [JWT.md](../03-development/JWT.md)。
+- 成功：直接返回资源（FastAPI `response_model`）。不要混用 `{ code, message, data }` 包一层。
 - 错误：`EAAPException` → JSON `{ "code", "message" }`，HTTP 状态见 [Request_Handle.md](../03-development/Request_Handle.md)。
-- 业务细分用 body `code`，不发明一堆 HTTP 码。
 
 ---
 
@@ -26,17 +25,20 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 | --- | --- | --- | --- |
 | GET | `/`（应用根） | 服务名与状态 | 无 |
 | GET | `/api/v1/health` | 健康检查 | 无 |
-| POST | `/api/v1/users` | 创建用户 | 无（R0 改密码字段；R1 迁到 /auth） |
-| GET | `/api/v1/users` | 列表 | 无 |
-| GET | `/api/v1/users/{id}` | 详情 | 无 |
-| POST | `/api/v1/agents` | 创建 | 无 |
-| GET | `/api/v1/agents` | 列表 | 无 |
-| GET | `/api/v1/agents/{id}` | 详情 | 无 |
-| POST | `/api/v1/agents/{id}/chat` | 非流式对话 | 无 |
-
-### 创建用户（将改）
-
-现状 `UserCreate`：`email`、`password_hash`。R0 改为 `password`，服务端哈希。
+| POST | `/api/v1/auth/register` | 注册（email + password） | 无 |
+| POST | `/api/v1/auth/login` | 返回 access、refresh、user | 无 |
+| POST | `/api/v1/auth/refresh` | body：`{ "refresh_token" }` | 无（凭 refresh） |
+| GET | `/api/v1/auth/me` | 当前用户 | Bearer |
+| POST | `/api/v1/users` | 注册别名，同 `/auth/register` | 无 |
+| GET | `/api/v1/users/me` | 当前用户 | Bearer |
+| GET | `/api/v1/users/{id}` | 仅能读自己，否则 404 | Bearer |
+| POST | `/api/v1/agents` | 创建；`created_by` 取 JWT | Bearer |
+| GET | `/api/v1/agents` | 当前用户的 Agent | Bearer |
+| GET | `/api/v1/agents/{id}` | 详情；非所有者 404 | Bearer |
+| POST | `/api/v1/agents/{id}/chat` | 非流式对话 | Bearer |
+| POST | `/api/v1/agents/{id}/chat/stream` | SSE：token / tool / done / error | Bearer |
+| GET | `/api/v1/conversations` | 当前用户会话；可选 `?agent_id=` | Bearer |
+| GET | `/api/v1/conversations/{id}/messages` | 历史；非所有者 404 | Bearer |
 
 ### 创建 Agent
 
@@ -44,14 +46,13 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 {
   "name": "ops-bot",
   "description": "optional",
-  "provider": "qwen",
-  "model_name": "qwen-plus",
-  "system_prompt": "You are a helpful agent.",
-  "created_by": 1
+  "provider": "mock",
+  "model_name": "mock-model",
+  "system_prompt": "You are a helpful agent."
 }
 ```
 
-R1 起去掉 `created_by`，改从 JWT 取。
+`created_by` 从 JWT 取，不要放进 body。
 
 ### Chat
 
@@ -59,8 +60,6 @@ R1 起去掉 `created_by`，改从 JWT 取。
 
 ```json
 {
-  "agent_id": 1,
-  "user_id": 1,
   "conversation_id": null,
   "variables": { "dept": "sales" },
   "user_message": "12*7+5 等于多少"
@@ -78,30 +77,7 @@ R1 起去掉 `created_by`，改从 JWT 取。
 }
 ```
 
-`conversation_id` 为空则按 `user_message` 建会话。R1 起去掉 body 里的 `user_id`。
-
----
-
-## 3. 计划中的端点
-
-### R1 Auth
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/auth/register` | email + password |
-| POST | `/auth/login` | 返回 access、refresh、user |
-| POST | `/auth/refresh` | |
-| GET | `/auth/me` | |
-
-现有 `/users` 列表在 R1 后仅 admin 或删除。
-
-### R1 流式与会话
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/agents/{id}/chat/stream` | SSE；事件含 token / tool / done / error |
-| GET | `/conversations` | 当前用户会话 |
-| GET | `/conversations/{id}/messages` | 历史 |
+`conversation_id` 为空则按 `user_message` 建会话。
 
 SSE 示例：
 
@@ -112,6 +88,14 @@ data: {"text":"你"}
 event: done
 data: {"conversation_id":10}
 ```
+
+登录失败：HTTP 401，`{ "code": 401, "message": "邮箱或密码错误" }`。
+
+本机演示账号与完整 curl（含登录、建 Agent、两轮 Chat、拉历史）见 [JWT.md](../03-development/JWT.md) 第 12 节。
+
+---
+
+## 3. 计划中的端点
 
 ### R2
 
@@ -156,4 +140,4 @@ HTTP 404。前端（若有）按状态码分流，页面只处理少数业务 co
 
 ## 5. 版本
 
-前缀 `/api/v1`。破坏性变更（如去掉 `user_id`）在 R1 一次性做完，不长期双字段。
+前缀 `/api/v1`。

@@ -59,6 +59,7 @@ pnpm --filter apps-web dev
 
 - API：http://localhost:8000 与 http://localhost:8000/docs
 - Web：http://localhost:5173
+- 本机演示账号（仅开发库）：`user@eaap.com` / `user`。登录字段是 email。R1 走一遍见 [JWT.md](JWT.md) 第 12 节。
 - Postgres：`localhost:${POSTGRES_PORT}`
 - Redis：`localhost:${REDIS_PORT}`
 - Qdrant：http://localhost:6333

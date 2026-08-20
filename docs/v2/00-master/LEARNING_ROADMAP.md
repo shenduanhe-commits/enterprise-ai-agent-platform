@@ -51,7 +51,9 @@ RAG / Eval / Observability ~25%
 
 ### R1 后端产品面
 
-- JWT access + refresh；依赖注入拿当前用户。
+- JWT access + refresh；依赖注入拿当前用户（见 [JWT.md](../03-development/JWT.md)）。
+- HTTPS 与抓包：路径在 TLS 内，SNI/IP 对旁路可见（见 [HTTPS.md](../03-development/HTTPS.md)）。
+- CORS / 预检只约束浏览器，不是 JWT 门禁（见 [CORS.md](../03-development/CORS.md)）。
 - FastAPI `StreamingResponse`、SSE 事件格式、客户端断开。
 - 统一错误体（见 [Request_Handle.md](../03-development/Request_Handle.md)）。
 

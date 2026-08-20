@@ -18,22 +18,24 @@ class ConversationRepository:
         return conversation
 
     async def get_by_id(
-        self, db: AsyncSession, conversation_id: int
+        self,
+        db: AsyncSession,
+        conversation_id: int,
+        user_id: int | None = None,
     ) -> Conversation | None:
-        result = await db.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
+        query = select(Conversation).where(Conversation.id == conversation_id)
+        if user_id is not None:
+            query = query.where(Conversation.user_id == user_id)
+        result = await db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_all(
-        self, db: AsyncSession, agent_id: int, user_id: int
+        self, db: AsyncSession, user_id: int, agent_id: int | None = None
     ) -> list[Conversation]:
-        result = await db.execute(
-            select(Conversation)
-            .where(Conversation.agent_id == agent_id)
-            .where(Conversation.user_id == user_id)
-            .order_by(desc(Conversation.updated_at))
-        )
+        query = select(Conversation).where(Conversation.user_id == user_id)
+        if agent_id is not None:
+            query = query.where(Conversation.agent_id == agent_id)
+        result = await db.execute(query.order_by(desc(Conversation.updated_at)))
         return result.scalars().all()
 
     async def update(

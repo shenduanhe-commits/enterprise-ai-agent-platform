@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.llm.gateway import LLMGateway
@@ -11,6 +13,15 @@ from app.schemas import AgentResponse
 from app.schemas.chat import ChatResponse
 from app.schemas.conversation import ConversationResponse
 from app.schemas.conversation_message import ConversationMessageResponse
+
+# 模型还没真正按 token 推时，把整段回答切成小块，SSE 才能看到多帧 token。
+_TOKEN_CHUNK_SIZE = 8
+
+
+def iter_token_chunks(text: str, size: int = _TOKEN_CHUNK_SIZE) -> list[str]:
+    if not text:
+        return []
+    return [text[i : i + size] for i in range(0, len(text), size)]
 
 
 class AgentExecutor:
@@ -36,21 +47,9 @@ class AgentExecutor:
         variables: dict | None = None,
     ) -> ChatResponse:
 
-        system_message = await self.prompt_manager.build(
-            db, agent=agent, variables=variables
+        messages = await self._build_messages(
+            db, agent, conversation, user_message, variables
         )
-
-        memory = await self.memory_manager.get_recent_messages(
-            db,
-            conversation_id=conversation.id,
-            limit=10,
-        )
-
-        messages = [
-            system_message,
-            *memory,
-            AIMessage(role="user", content=user_message),
-        ]
 
         result: AIMessage = await self.run_loop(
             agent,
@@ -71,13 +70,70 @@ class AgentExecutor:
             created_at=message.created_at,
         )
 
-    # 工具调用循环
+    async def execute_stream(
+        self,
+        db: AsyncSession,
+        agent: AgentResponse,
+        conversation: ConversationResponse,
+        user_message: str,
+        variables: dict | None = None,
+    ) -> AsyncIterator[tuple[str, dict]]:
+        messages = await self._build_messages(
+            db, agent, conversation, user_message, variables
+        )
+
+        token_parts: list[str] = []
+        async for event, data in self.stream_loop(agent, messages):
+            if event == "token":
+                token_parts.append(data["text"])
+            yield event, data
+
+        await self.memory_manager.create_message(
+            db,
+            conversation_id=conversation.id,
+            user_message=user_message,
+            assistant_message="".join(token_parts),
+        )
+        yield "done", {"conversation_id": conversation.id}
+
+    async def _build_messages(
+        self,
+        db: AsyncSession,
+        agent: AgentResponse,
+        conversation: ConversationResponse,
+        user_message: str,
+        variables: dict | None,
+    ) -> list[AIMessage]:
+        system_message = await self.prompt_manager.build(
+            db, agent=agent, variables=variables
+        )
+        memory = await self.memory_manager.get_recent_messages(
+            db,
+            conversation_id=conversation.id,
+            limit=10,
+        )
+        return [
+            system_message,
+            *memory,
+            AIMessage(role="user", content=user_message),
+        ]
+
     async def run_loop(
         self,
         agent: AgentResponse,
         messages: list[AIMessage],
     ) -> AIMessage:
+        parts: list[str] = []
+        async for event, data in self.stream_loop(agent, messages):
+            if event == "token":
+                parts.append(data["text"])
+        return AIMessage(role="assistant", content="".join(parts) or None)
 
+    async def stream_loop(
+        self,
+        agent: AgentResponse,
+        messages: list[AIMessage],
+    ) -> AsyncIterator[tuple[str, dict]]:
         max_iterations = 5
 
         for _ in range(max_iterations):
@@ -88,11 +144,10 @@ class AgentExecutor:
                 tools=self.tool_manager.get_schemas(),
             )
 
-            # 没有工具调用
             if not response.tool_calls:
-                return response
-
-            # 有工具调用
+                for chunk in iter_token_chunks(response.content or ""):
+                    yield "token", {"text": chunk}
+                return
 
             messages.append(
                 AIMessage(
@@ -102,42 +157,47 @@ class AgentExecutor:
                 )
             )
 
-            tool_results = await self.execute_tools(response.tool_calls)
+            tool_results: list[AIMessage] = []
+            for call in response.tool_calls:
+                name = call["function"]["name"]
+                call_id = call["id"]
+                yield "tool", {"id": call_id, "name": name, "status": "start"}
+                result = await self.execute_one_tool(call)
+                tool_results.append(result)
+                yield (
+                    "tool",
+                    {
+                        "id": call_id,
+                        "name": name,
+                        "status": "result",
+                        "content": result.content,
+                    },
+                )
 
             messages.extend(tool_results)
 
         raise AgentRuntimeException("Agent execution exceeded max iterations")
 
-    # 工具调用执行
+    async def execute_one_tool(self, call: dict) -> AIMessage:
+        tool = self.tool_manager.get(call["function"]["name"])
+
+        if not tool:
+            return AIMessage(
+                role="tool",
+                tool_call_id=call["id"],
+                content="tool not found",
+            )
+
+        arguments = parse_tool_call_arguments(call["function"]["arguments"])
+        result = await tool.execute(**arguments)
+        return AIMessage(
+            role="tool",
+            tool_call_id=call["id"],
+            content=result,
+        )
+
     async def execute_tools(
         self,
         tool_calls: list[dict],
     ) -> list[AIMessage]:
-
-        results: list[AIMessage] = []
-
-        for call in tool_calls:
-            tool = self.tool_manager.get(call["function"]["name"])
-
-            if not tool:
-                results.append(
-                    AIMessage(
-                        role="tool",
-                        tool_call_id=call["id"],
-                        content="tool not found",
-                    )
-                )
-
-                continue
-            arguments = parse_tool_call_arguments(call["function"]["arguments"])
-            result = await tool.execute(**arguments)
-
-            results.append(
-                AIMessage(
-                    role="tool",
-                    tool_call_id=call["id"],
-                    content=result,
-                )
-            )
-
-        return results
+        return [await self.execute_one_tool(call) for call in tool_calls]

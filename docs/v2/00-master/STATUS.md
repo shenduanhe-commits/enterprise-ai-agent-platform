@@ -3,32 +3,28 @@
 | 项目 | 内容 |
 | --- | --- |
 | 版本 | V2.1 |
-| 更新日期 | 2026-08-15 |
+| 更新日期 | 2026-08-20 |
 | 替代 | 根目录 `EAAP_STATUS.md`、`PROJECT_CHANGELOG.md`（V1，已过期） |
 
 ---
 
 ## 1. 一句话
 
-工程上已越过脚手架，后端能创建 Agent 并跑一轮非流式对话；**尚未对齐 V2 的 MVP（R0–R3）**。当前阶段：**R0 未开始**。
-
-旧状态文件仍写着 Milestone 0 In Progress，以本文为准。
+后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 流式已接通。**R1 后端验收已走通**（Swagger/curl）。前端演示壳仍未接。MVP 仍差 R2–R3。
 
 ---
 
 ## 2. 进度条
 
 ```
-R0  基线修复          ░░░░░░░░░░░░  未开始（代码有缺口）
-R1  认证 + 流式 API   ░░░░░░░░░░░░  未开始
+R0  基线修复          ████████████  完成
+R1  认证 + 流式 API   ██████████░░  后端验收完成；前端演示壳选修
 R2  LangGraph Runtime ░░░░░░░░░░░░  未开始
 R3  企业 RAG          ░░░░░░░░░░░░  未开始
 R4  MCP               ░░░░░░░░░░░░  未开始
 R5  Multi-Agent / A2A ░░░░░░░░░░░░  未开始
 R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 ```
-
-相对 MVP（R0–R3）约 **35–40%** 的代码预支（自研 Runtime 和 Agent CRUD），但 R0 的闭环修复还没做。
 
 ---
 
@@ -45,51 +41,54 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 | 能力 | 路径 / 说明 |
 | --- | --- |
 | Health | `/api/v1/health` |
-| User CRUD | `POST/GET /api/v1/users`（无登录，客户端仍传 `password_hash`） |
-| Agent CRUD | `POST/GET /api/v1/agents` |
-| Chat | `POST /api/v1/agents/{id}/chat`（非流式） |
+| 注册 | `POST /api/v1/auth/register`（`POST /users` 仍可用） |
+| 登录 / 刷新 | `POST /api/v1/auth/login`、`/auth/refresh`；Bearer access JWT |
+| 当前用户 | `GET /api/v1/auth/me` |
+| Agent CRUD | `POST/GET /api/v1/agents`（按 `created_by` 隔离） |
+| Chat | `POST /api/v1/agents/{id}/chat`（非流式）、`/chat/stream`（SSE） |
+| 会话 | `GET /api/v1/conversations`、`GET /api/v1/conversations/{id}/messages` |
 | 模型 | `user`、`agent`、`prompt`、`conversation`、`conversation_message` |
 
 ### AI
 
-- `LLMGateway`：Qwen / OpenAI / Anthropic（按 API Key 注册）。
-- `AgentExecutor`：最多 5 轮工具循环。
+- `LLMGateway`：mock 始终注册；Qwen / OpenAI / Anthropic 按 API Key 注册。
+- `AgentExecutor`：最多 5 轮工具循环；SSE 事件 `token` / `tool` / `done` / `error`。
+- Qwen、OpenAI 解析 OpenAI 形态 `tool_calls`；Anthropic 走 `messages.create` + `tool_use`。
 - `PromptManager`：优先最新 Prompt 模板，否则 Agent `system_prompt`。
 - `MemoryManager`：最近 10 条消息。
-- `ToolManager`：仅内置 calculator；schema 参数目前为空。
-- Qwen Provider 已解析 `tool_calls`；OpenAI Provider **未解析**。
+- `ToolManager`：内置 calculator，带 JSON Schema。calculator 内部仍是 `eval()`。
 
 ### 前端
 
-- 仍是 Vue 脚手架。`router/agents.ts` 等为空。**不阻塞 R0。**
+- 仍是 Vue 脚手架。`router/agents.ts` 等为空。**不阻塞后端验收。**
 
 ### 测试
 
-- `apps/api/tests/` 下有 repository / service / schema / runtime / prompt 等；存在命名问题（如 `text_agent_service.py`）。
+- pytest：`test_agent_runtime.py`、`test_agent_service.py`、`test_agent_schema.py`、`test_sse.py`、`test_prompt_manager.py`、`test_providers.py`、`test_user_service.py`。
+- 连库手写脚本已用 `if __name__ == "__main__"` 保护。
 
 ---
 
-## 4. 已知缺口（R0 必须修）
+## 4. 已知缺口
 
-1. OpenAI（及需对齐的 Anthropic）未回传 `tool_calls`，工具循环在这些 Provider 上是断的。
-2. `BaseTool.schema` 没有真实 JSON Schema 参数。
-3. 密码由客户端当哈希传入。
-4. 无 Mock Provider 默认路径时，无 Key 环境测试不稳。
-5. Chat 非流式、无鉴权。
+1. Calculator 使用 `eval()`，不能当生产工具。
+2. SSE `token` 是整段回答切块，不是模型真流式。
+3. 会话 `update` / `delete` 尚未挂路由，Service 层也不带 `user_id`。
+4. 前端未接登录 / Agent / Chat。
+5. R2 起：LangGraph、RAG、MCP。
 
 ---
 
 ## 5. 下一步
 
-分支：`feature/r0-runtime-hardening`（GitHub Flow，合入 `main`）。只做 **R0**，不要并行开 LangGraph 或 RAG：
+R1 后端完成标准已满足：登录 → 建 Mock Agent → 两轮对话 → 拉历史。curl 见 [JWT.md](../03-development/JWT.md) 第 12 节。**不要开 LangGraph**，除非明确开始 R2。
 
-1. 所有 Provider 统一解析 `tool_calls`。
-2. calculator 带真实 schema。
-3. 服务端 Argon2 哈希，Schema 改为收 `password`。
-4. Mock Provider 可跑通无 Key 测试。
-5. runtime 测试覆盖：无工具 / 有工具 / 超轮次。
+可选：
 
-R0 完成标准：`POST /api/v1/agents/{id}/chat` 在 Qwen 或 Mock 下能走「计算题 → calculator → 答案」，pytest 全绿。
+1. 前端三页（登录 / Agent / Chat）或继续只用 Swagger。
+2. 把 calculator 从 `eval()` 换成安全表达式解析。
+
+本机演示账号：`user@eaap.com` / `user`（仅开发库）。
 
 ---
 
@@ -97,6 +96,9 @@ R0 完成标准：`POST /api/v1/agents/{id}/chat` 在 Qwen 或 Mock 下能走「
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-20 | R1 后端验收走通（Mock：登录 → 建 Agent → 两轮 Chat → 拉历史）；补 JWT/HTTPS/CORS 笔记 |
+| 2026-08-18 | R0 闭环 + R1 后端：JWT access/refresh、SSE、会话历史；OpenAI/Anthropic tool 解析对齐 |
+| 2026-08-18 | 测试命名：`text_agent_service.py` → `test_agent_service.py`；`conversation_message_service` 拼写已改 |
 | 2026-08-15 | 建立 V2 文档集；确认基线与 R0 为下一步 |
 | 2026-07-31 | （历史）M0 工程基础、M1 分层与 User、Agent CRUD 与自研 Runtime 已在代码中 |
 | 2026-07-30 | （历史）Docker / Postgres / Redis / Qdrant 就绪 |
