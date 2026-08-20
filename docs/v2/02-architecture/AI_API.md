@@ -91,6 +91,8 @@ data: {"conversation_id":10}
 
 登录失败：HTTP 401，`{ "code": 401, "message": "邮箱或密码错误" }`。
 
+本机演示账号与完整 curl（含登录、建 Agent、两轮 Chat、拉历史）见 [JWT.md](../03-development/JWT.md) 第 12 节。
+
 ---
 
 ## 3. 计划中的端点

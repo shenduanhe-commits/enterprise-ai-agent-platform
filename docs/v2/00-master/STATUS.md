@@ -3,14 +3,14 @@
 | 项目 | 内容 |
 | --- | --- |
 | 版本 | V2.1 |
-| 更新日期 | 2026-08-18 |
+| 更新日期 | 2026-08-20 |
 | 替代 | 根目录 `EAAP_STATUS.md`、`PROJECT_CHANGELOG.md`（V1，已过期） |
 
 ---
 
 ## 1. 一句话
 
-后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 流式已接通。**当前阶段：R1 收口中。** MVP 仍差 R2–R3。
+后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 流式已接通。**R1 后端验收已走通**（Swagger/curl）。前端演示壳仍未接。MVP 仍差 R2–R3。
 
 ---
 
@@ -18,7 +18,7 @@
 
 ```
 R0  基线修复          ████████████  完成
-R1  认证 + 流式 API   ██████████░░  进行中（后端主路径已有，前端演示壳未接）
+R1  认证 + 流式 API   ██████████░░  后端验收完成；前端演示壳选修
 R2  LangGraph Runtime ░░░░░░░░░░░░  未开始
 R3  企业 RAG          ░░░░░░░░░░░░  未开始
 R4  MCP               ░░░░░░░░░░░░  未开始
@@ -81,13 +81,14 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 
 ## 5. 下一步
 
-只收口 R1 演示与文档，**不要开 LangGraph**：
+R1 后端完成标准已满足：登录 → 建 Mock Agent → 两轮对话 → 拉历史。curl 见 [JWT.md](../03-development/JWT.md) 第 12 节。**不要开 LangGraph**，除非明确开始 R2。
 
-1. Swagger/curl：注册 → 登录 → 建 Agent → `/chat/stream` → 拉会话历史。
-2. 前端三页（选修）或保持 Swagger。
-3. 视需要把 calculator 换成安全表达式解析。
+可选：
 
-R1 完成标准：独立走通「注册 → 建 Agent → 两轮对话 → 拉历史」。
+1. 前端三页（登录 / Agent / Chat）或继续只用 Swagger。
+2. 把 calculator 从 `eval()` 换成安全表达式解析。
+
+本机演示账号：`user@eaap.com` / `user`（仅开发库）。
 
 ---
 
@@ -95,6 +96,7 @@ R1 完成标准：独立走通「注册 → 建 Agent → 两轮对话 → 拉�
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-20 | R1 后端验收走通（Mock：登录 → 建 Agent → 两轮 Chat → 拉历史）；补 JWT/HTTPS/CORS 笔记 |
 | 2026-08-18 | R0 闭环 + R1 后端：JWT access/refresh、SSE、会话历史；OpenAI/Anthropic tool 解析对齐 |
 | 2026-08-18 | 测试命名：`text_agent_service.py` → `test_agent_service.py`；`conversation_message_service` 拼写已改 |
 | 2026-08-15 | 建立 V2 文档集；确认基线与 R0 为下一步 |

@@ -278,19 +278,40 @@ Access 过期后（正在聊天也一样）：
 
 ## 12. 自己走一遍
 
-```bash
-# 注册
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"you@eaap.com\",\"password\":\"secret12\"}"
+本机开发库可用演示账号（**不要**拿到公网）：邮箱 `user@eaap.com`，密码 `user`。登录字段是 email，没有单独的用户名。PowerShell 请用 `curl.exe`，不要用被别名成 `Invoke-WebRequest` 的 `curl`。
 
+R1 验收链：登录 → 建 Mock Agent → 两轮对话 → 拉历史。Chat 请求体见 [AI_API.md](../02-architecture/AI_API.md)。
+
+```bash
 # 登录，记下 access_token 和 refresh_token
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"you@eaap.com\",\"password\":\"secret12\"}"
+  -d "{\"email\":\"user@eaap.com\",\"password\":\"user\"}"
 
 # 带 access 访问
 curl http://localhost:8000/api/v1/auth/me \
+  -H "Authorization: Bearer <access_token>"
+
+# 建 Agent（created_by 从 JWT 取，不要放 body）
+curl -X POST http://localhost:8000/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
+  -d "{\"name\":\"ops-bot\",\"provider\":\"mock\",\"model_name\":\"mock-model\",\"system_prompt\":\"You are a helpful agent.\"}"
+
+# 第一轮：不带 conversation_id，Mock 会调 calculator
+curl -X POST http://localhost:8000/api/v1/agents/<agent_id>/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
+  -d "{\"conversation_id\":null,\"user_message\":\"12*7+5\"}"
+
+# 第二轮：带上返回的 conversation_id
+curl -X POST http://localhost:8000/api/v1/agents/<agent_id>/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
+  -d "{\"conversation_id\":<conversation_id>,\"user_message\":\"hello\"}"
+
+# 拉历史
+curl http://localhost:8000/api/v1/conversations/<conversation_id>/messages \
   -H "Authorization: Bearer <access_token>"
 
 # access 过期后换票（body 里带 refresh，不要放 Authorization）
@@ -299,4 +320,4 @@ curl -X POST http://localhost:8000/api/v1/auth/refresh \
   -d "{\"refresh_token\":\"<refresh_token>\"}"
 ```
 
-把 access 贴进 jwt.io（只用于本地假数据），对照 header 的 `alg` 和 payload 的 `sub` / `typ` / `exp`。
+没有账号时先 `POST /auth/register`。把 access 贴进 jwt.io（只用于本地假数据），对照 header 的 `alg` 和 payload 的 `sub` / `typ` / `exp`。
