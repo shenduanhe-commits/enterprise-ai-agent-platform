@@ -40,7 +40,9 @@ V1 可以对照历史，但执行、学习、面试准备都以 V2 为准。两�
 | 用什么技术、不用什么 | [02-architecture/Technology_Stack.md](02-architecture/Technology_Stack.md) |
 | 表和向量库 | [02-architecture/Database.md](02-architecture/Database.md) |
 | HTTP / SSE 接口 | [02-architecture/AI_API.md](02-architecture/AI_API.md) |
-| JWT 怎么签发、怎么进 CurrentUser | [03-development/JWT.md](03-development/JWT.md) |
+| JWT 怎么签发、refresh 怎么用 | [03-development/JWT.md](03-development/JWT.md) |
+| HTTPS 加密了什么、抓包能看见什么 | [03-development/HTTPS.md](03-development/HTTPS.md) |
+| CORS / 预检为什么拦不住 curl | [03-development/CORS.md](03-development/CORS.md) |
 | 如何把环境跑起来 | [03-development/Environment.md](03-development/Environment.md) |
 | 代码与测试约定 | [03-development/CodingStyle.md](03-development/CodingStyle.md)、[TestingStrategy.md](03-development/TestingStrategy.md) |
 | 安全 / 可观测 / 部署 | [04-operations/](04-operations/) |
@@ -72,7 +74,9 @@ docs/v2/
 │   ├── TestingStrategy.md
 │   ├── GitWorkflow.md
 │   ├── Request_Handle.md
-│   ├── JWT.md                         R1：签发 / Bearer / CurrentUser
+│   ├── JWT.md                         R1：签发 / Bearer / refresh
+│   ├── HTTPS.md                       TLS、私钥、抓包与 URL
+│   ├── CORS.md                        预检、浏览器门、curl
 │   └── ADR/
 └── 04-operations/
     ├── Deployment.md

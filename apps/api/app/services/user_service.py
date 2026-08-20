@@ -72,7 +72,7 @@ class UserService:
     async def get_user_by_token(self, db: AsyncSession, token: str) -> UserResponse:
         try:
             payload = decode_token(token)
-            if payload.get("typ") not in (None, "access"):
+            if payload.get("typ") != "access":
                 raise UnauthorizedException("Token 无效")
 
             try:
