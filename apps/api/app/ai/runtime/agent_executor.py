@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.llm.gateway import LLMGateway
 from app.ai.memory.manager import MemoryManager
 from app.ai.prompts.manager import PromptManager
+from app.ai.runtime.agent_graph import iter_token_chunks, run_graph, stream_graph
 from app.ai.tools.manager import ToolManager
 from app.ai.tools.parser import parse_tool_call_arguments
 from app.ai.type import AIMessage
@@ -13,15 +14,6 @@ from app.schemas import AgentResponse
 from app.schemas.chat import ChatResponse
 from app.schemas.conversation import ConversationResponse
 from app.schemas.conversation_message import ConversationMessageResponse
-
-# 模型还没真正按 token 推时，把整段回答切成小块，SSE 才能看到多帧 token。
-_TOKEN_CHUNK_SIZE = 8
-
-
-def iter_token_chunks(text: str, size: int = _TOKEN_CHUNK_SIZE) -> list[str]:
-    if not text:
-        return []
-    return [text[i : i + size] for i in range(0, len(text), size)]
 
 
 class AgentExecutor:
@@ -38,6 +30,7 @@ class AgentExecutor:
         self.memory_manager = memory_manager
         self.tool_manager = tool_manager
 
+    # 非流式 /chat 走这里
     async def execute(
         self,
         db: AsyncSession,
@@ -51,7 +44,9 @@ class AgentExecutor:
             db, agent, conversation, user_message, variables
         )
 
-        result: AIMessage = await self.run_loop(
+        result: AIMessage = await run_graph(
+            self.llm_gateway,
+            self.tool_manager,
             agent,
             messages,
         )
@@ -70,6 +65,7 @@ class AgentExecutor:
             created_at=message.created_at,
         )
 
+    # SSE 走这里
     async def execute_stream(
         self,
         db: AsyncSession,
@@ -83,7 +79,12 @@ class AgentExecutor:
         )
 
         token_parts: list[str] = []
-        async for event, data in self.stream_loop(agent, messages):
+        async for event, data in stream_graph(
+            self.llm_gateway,
+            self.tool_manager,
+            agent,
+            messages,
+        ):
             if event == "token":
                 token_parts.append(data["text"])
             yield event, data
@@ -96,6 +97,7 @@ class AgentExecutor:
         )
         yield "done", {"conversation_id": conversation.id}
 
+    # 构建 messages
     async def _build_messages(
         self,
         db: AsyncSession,
@@ -118,6 +120,7 @@ class AgentExecutor:
             AIMessage(role="user", content=user_message),
         ]
 
+    # 非graph 非流式 /chat 走这里
     async def run_loop(
         self,
         agent: AgentResponse,
@@ -129,6 +132,7 @@ class AgentExecutor:
                 parts.append(data["text"])
         return AIMessage(role="assistant", content="".join(parts) or None)
 
+    # 非graph SSE 走这里
     async def stream_loop(
         self,
         agent: AgentResponse,
@@ -178,6 +182,7 @@ class AgentExecutor:
 
         raise AgentRuntimeException("Agent execution exceeded max iterations")
 
+    # 工具执行函数
     async def execute_one_tool(self, call: dict) -> AIMessage:
         tool = self.tool_manager.get(call["function"]["name"])
 
@@ -196,6 +201,7 @@ class AgentExecutor:
             content=result,
         )
 
+    # 遍历多个工具并执行
     async def execute_tools(
         self,
         tool_calls: list[dict],
