@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.llm.gateway import (
@@ -27,6 +27,7 @@ from app.ai.prompts.manager import (
 from app.ai.runtime.agent_executor import (
     AgentExecutor,
 )
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from app.ai.tools.builtin.calculator import CalculatorTool
 from app.ai.tools.manager import ToolManager
 from app.core.config import settings
@@ -104,11 +105,19 @@ def get_tool_manager() -> ToolManager:
 ToolManagerDep = Annotated[ToolManager, Depends(get_tool_manager)]
 
 
+def get_checkpointer(request: Request) -> BaseCheckpointSaver | None:
+    return getattr(request.app.state, "checkpointer", None)
+
+
+CheckpointerDep = Annotated[BaseCheckpointSaver | None, Depends(get_checkpointer)]
+
+
 async def get_agent_executor(
     llm_gateway: LLMGatewayDep,
     prompt_manager: PromptManagerDep,
     memory_manager: MemoryManagerDep,
     tool_manager: ToolManagerDep,
+    checkpointer: CheckpointerDep,
 ) -> AgentExecutor:
 
     return AgentExecutor(
@@ -116,6 +125,7 @@ async def get_agent_executor(
         prompt_manager=prompt_manager,
         memory_manager=memory_manager,
         tool_manager=tool_manager,
+        checkpointer=checkpointer,
     )
 
 

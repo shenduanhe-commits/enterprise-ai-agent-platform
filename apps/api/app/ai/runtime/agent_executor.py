@@ -10,6 +10,7 @@ from app.ai.tools.manager import ToolManager
 from app.ai.tools.parser import parse_tool_call_arguments
 from app.ai.type import AIMessage
 from app.core.exceptions import AgentRuntimeException
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from app.schemas import AgentResponse
 from app.schemas.chat import ChatResponse
 from app.schemas.conversation import ConversationResponse
@@ -23,12 +24,14 @@ class AgentExecutor:
         prompt_manager: PromptManager,
         memory_manager: MemoryManager,
         tool_manager: ToolManager,
+        checkpointer: BaseCheckpointSaver | None = None,
     ):
 
         self.llm_gateway = llm_gateway
         self.prompt_manager = prompt_manager
         self.memory_manager = memory_manager
         self.tool_manager = tool_manager
+        self.checkpointer = checkpointer
 
     # 非流式 /chat 走这里
     async def execute(
@@ -49,6 +52,8 @@ class AgentExecutor:
             self.tool_manager,
             agent,
             messages,
+            thread_id=str(conversation.id),
+            checkpointer=self.checkpointer,
         )
 
         message: ConversationMessageResponse = await self.memory_manager.create_message(
@@ -84,6 +89,8 @@ class AgentExecutor:
             self.tool_manager,
             agent,
             messages,
+            thread_id=str(conversation.id),
+            checkpointer=self.checkpointer,
         ):
             if event == "token":
                 token_parts.append(data["text"])

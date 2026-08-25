@@ -2,6 +2,7 @@ import operator
 from collections.abc import AsyncIterator
 from typing import Annotated, Any
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
@@ -28,17 +29,19 @@ class AgentGraphState(TypedDict):
 
 
 class AgentGraph:
-    """手写 StateGraph，行为对齐 run_loop。/chat 与 /chat/stream 都走这里。"""
+    """手写 StateGraph。对话 Memory 在库里；图状态（含工具消息）在 checkpointer。"""
 
     def __init__(
         self,
         llm_gateway: LLMGateway,
         tool_manager: ToolManager,
         agent: Any,
+        checkpointer: BaseCheckpointSaver | None = None,
     ):
         self.llm_gateway = llm_gateway
         self.tool_manager = tool_manager
         self.agent = agent
+        self._checkpointer = checkpointer
         self._graph = self._build()
 
     # 构建 StateGraph
@@ -56,24 +59,41 @@ class AgentGraph:
             },
         )
         builder.add_edge("execute_tools", "call_model")
-        return builder.compile()
+        return builder.compile(checkpointer=self._checkpointer)
+
+    def _config(self, thread_id: str | None) -> dict | None:
+        if self._checkpointer is None or thread_id is None:
+            return None
+        return {"configurable": {"thread_id": str(thread_id)}}
+
+    async def _input_for_turn(
+        self, messages: list[AIMessage], config: dict | None
+    ) -> dict:
+        if config is None:
+            return {"messages": messages, "iteration": 0}
+        snapshot = await self._graph.aget_state(config)
+        if snapshot.values and snapshot.values.get("messages"):
+            # checkpoint 里已有历史，只追加本轮 user，避免和 Memory 拼重复。
+            return {"messages": [messages[-1]], "iteration": 0}
+        return {"messages": messages, "iteration": 0}
 
     # 非流式 /chat 走这里
-    async def run(self, messages: list[AIMessage]) -> AIMessage:
-        final = await self._graph.ainvoke(
-            {"messages": messages, "iteration": 0},
-        )
+    async def run(
+        self, messages: list[AIMessage], thread_id: str | None = None
+    ) -> AIMessage:
+        config = self._config(thread_id)
+        payload = await self._input_for_turn(messages, config)
+        final = await self._graph.ainvoke(payload, config)
         last = final["messages"][-1]
         return AIMessage(role="assistant", content=last.content)
 
     # 流式 /chat/stream 走这里
     async def stream(
-        self, messages: list[AIMessage]
+        self, messages: list[AIMessage], thread_id: str | None = None
     ) -> AsyncIterator[tuple[str, dict]]:
-        async for event in self._graph.astream(
-            {"messages": messages, "iteration": 0},
-            stream_mode="custom",
-        ):
+        config = self._config(thread_id)
+        payload = await self._input_for_turn(messages, config)
+        async for event in self._graph.astream(payload, config, stream_mode="custom"):
             yield event
 
     # 调用模型
@@ -144,22 +164,28 @@ class AgentGraph:
         )
 
 
-# 非流式 /chat 走这里
 async def run_graph(
     llm_gateway: LLMGateway,
     tool_manager: ToolManager,
     agent: Any,
     messages: list[AIMessage],
+    thread_id: str | None = None,
+    checkpointer: BaseCheckpointSaver | None = None,
 ) -> AIMessage:
-    return await AgentGraph(llm_gateway, tool_manager, agent).run(messages)
+    return await AgentGraph(
+        llm_gateway, tool_manager, agent, checkpointer=checkpointer
+    ).run(messages, thread_id=thread_id)
 
 
-# 流式 /chat/stream 走这里
 async def stream_graph(
     llm_gateway: LLMGateway,
     tool_manager: ToolManager,
     agent: Any,
     messages: list[AIMessage],
+    thread_id: str | None = None,
+    checkpointer: BaseCheckpointSaver | None = None,
 ) -> AsyncIterator[tuple[str, dict]]:
-    async for event in AgentGraph(llm_gateway, tool_manager, agent).stream(messages):
+    async for event in AgentGraph(
+        llm_gateway, tool_manager, agent, checkpointer=checkpointer
+    ).stream(messages, thread_id=thread_id):
         yield event

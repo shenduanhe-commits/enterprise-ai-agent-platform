@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 
+from app.core.event_loop import use_selector_event_loop_on_windows
+
+use_selector_event_loop_on_windows()
+
 from app.api import router
 from app.core.exceptions import EAAPException
 from app.core.lifespan import lifespan

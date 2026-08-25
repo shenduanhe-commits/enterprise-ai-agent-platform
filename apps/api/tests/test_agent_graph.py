@@ -6,7 +6,8 @@ from app.ai.llm.gateway import LLMGateway
 from app.ai.llm.providers.base import BaseLLMProvider
 from app.ai.llm.providers.mock import MockLLMProvider
 from app.ai.runtime.agent_executor import AgentExecutor
-from app.ai.runtime.agent_graph import run_graph, stream_graph
+from app.ai.runtime.agent_graph import AgentGraph, run_graph, stream_graph
+from langgraph.checkpoint.memory import InMemorySaver
 from app.ai.tools.builtin.calculator import CalculatorTool
 from app.ai.tools.manager import ToolManager
 from app.ai.type import AIMessage
@@ -229,3 +230,97 @@ async def test_execute_stream_uses_graph_not_loop():
 
     assert events[-1] == ("done", {"conversation_id": 1})
     assert "Mock AI Response" in saved["content"]
+
+
+class RecordingLLMProvider(BaseLLMProvider):
+    def __init__(self):
+        self.seen: list[list[str | None]] = []
+
+    async def chat(
+        self,
+        model: str,
+        messages: list[AIMessage],
+        tools: list[dict] | None = None,
+    ) -> AIMessage:
+        self.seen.append([message.content for message in messages])
+        last = messages[-1].content or ""
+        return AIMessage(role="assistant", content=f"ack:{last}")
+
+
+@pytest.mark.asyncio
+async def test_checkpointer_second_turn_keeps_graph_history():
+    saver = InMemorySaver()
+    recorder = RecordingLLMProvider()
+    thread_id = "conv-42"
+
+    await run_graph(
+        LLMGateway({"mock": recorder}),
+        _tools(),
+        _agent(),
+        [AIMessage(role="user", content="hello")],
+        thread_id=thread_id,
+        checkpointer=saver,
+    )
+    await run_graph(
+        LLMGateway({"mock": recorder}),
+        _tools(),
+        _agent(),
+        [AIMessage(role="user", content="again")],
+        thread_id=thread_id,
+        checkpointer=saver,
+    )
+
+    assert recorder.seen[0] == ["hello"]
+    assert recorder.seen[1] == ["hello", "ack:hello", "again"]
+
+
+@pytest.mark.asyncio
+async def test_checkpointer_survives_new_graph_instance():
+    saver = InMemorySaver()
+    thread_id = "conv-restart"
+    await run_graph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        _tools(),
+        _agent(),
+        [AIMessage(role="user", content="ping")],
+        thread_id=thread_id,
+        checkpointer=saver,
+    )
+
+    restarted = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        _tools(),
+        _agent(),
+        checkpointer=saver,
+    )
+    snapshot = await restarted._graph.aget_state(
+        {"configurable": {"thread_id": thread_id}}
+    )
+    contents = [message.content for message in snapshot.values["messages"]]
+    assert "ping" in contents
+    assert any("Mock AI Response" in (content or "") for content in contents)
+
+
+@pytest.mark.asyncio
+async def test_checkpointer_isolates_threads():
+    saver = InMemorySaver()
+    recorder = RecordingLLMProvider()
+
+    await run_graph(
+        LLMGateway({"mock": recorder}),
+        _tools(),
+        _agent(),
+        [AIMessage(role="user", content="from-a")],
+        thread_id="thread-a",
+        checkpointer=saver,
+    )
+    await run_graph(
+        LLMGateway({"mock": recorder}),
+        _tools(),
+        _agent(),
+        [AIMessage(role="user", content="from-b")],
+        thread_id="thread-b",
+        checkpointer=saver,
+    )
+
+    assert recorder.seen[1] == ["from-b"]
