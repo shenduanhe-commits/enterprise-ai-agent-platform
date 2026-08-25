@@ -41,6 +41,7 @@ class AgentGraph:
         self.agent = agent
         self._graph = self._build()
 
+    # 构建 StateGraph
     def _build(self):
         builder = StateGraph(AgentGraphState)
         builder.add_node("call_model", self._call_model)
@@ -57,6 +58,7 @@ class AgentGraph:
         builder.add_edge("execute_tools", "call_model")
         return builder.compile()
 
+    # 非流式 /chat 走这里
     async def run(self, messages: list[AIMessage]) -> AIMessage:
         final = await self._graph.ainvoke(
             {"messages": messages, "iteration": 0},
@@ -64,6 +66,7 @@ class AgentGraph:
         last = final["messages"][-1]
         return AIMessage(role="assistant", content=last.content)
 
+    # 流式 /chat/stream 走这里
     async def stream(
         self, messages: list[AIMessage]
     ) -> AsyncIterator[tuple[str, dict]]:
@@ -73,6 +76,7 @@ class AgentGraph:
         ):
             yield event
 
+    # 调用模型
     async def _call_model(self, state: AgentGraphState) -> dict:
         iteration = state.get("iteration", 0) + 1
         if iteration > _MAX_ITERATIONS:
@@ -90,12 +94,14 @@ class AgentGraph:
                 writer(("token", {"text": chunk}))
         return {"messages": [response], "iteration": iteration}
 
+    # 路由
     def _route(self, state: AgentGraphState):
         last = state["messages"][-1]
         if last.tool_calls:
             return "execute_tools"
         return END
 
+    # 执行工具
     async def _execute_tools(self, state: AgentGraphState) -> dict:
         last = state["messages"][-1]
         writer = get_stream_writer()
@@ -119,6 +125,7 @@ class AgentGraph:
             )
         return {"messages": tool_results}
 
+    # 执行单个工具
     async def _execute_one_tool(self, call: dict) -> AIMessage:
         tool = self.tool_manager.get(call["function"]["name"])
         if not tool:
@@ -137,6 +144,7 @@ class AgentGraph:
         )
 
 
+# 非流式 /chat 走这里
 async def run_graph(
     llm_gateway: LLMGateway,
     tool_manager: ToolManager,
@@ -146,6 +154,7 @@ async def run_graph(
     return await AgentGraph(llm_gateway, tool_manager, agent).run(messages)
 
 
+# 流式 /chat/stream 走这里
 async def stream_graph(
     llm_gateway: LLMGateway,
     tool_manager: ToolManager,
