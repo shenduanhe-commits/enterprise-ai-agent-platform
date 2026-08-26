@@ -18,4 +18,7 @@ class ChatResponse(BaseModel):
 
     created_at: datetime | None = None
 
+    status: str = "completed"
+    pending: dict | None = None
+
     model_config = ConfigDict(from_attributes=True)

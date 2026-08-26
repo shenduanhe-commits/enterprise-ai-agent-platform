@@ -35,10 +35,12 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 | POST | `/api/v1/agents` | 创建；`created_by` 取 JWT | Bearer |
 | GET | `/api/v1/agents` | 当前用户的 Agent | Bearer |
 | GET | `/api/v1/agents/{id}` | 详情；非所有者 404 | Bearer |
-| POST | `/api/v1/agents/{id}/chat` | 非流式对话 | Bearer |
-| POST | `/api/v1/agents/{id}/chat/stream` | SSE：token / tool / done / error | Bearer |
+| POST | `/api/v1/agents/{id}/chat` | 非流式对话；危险工具会 `status=interrupted` | Bearer |
+| POST | `/api/v1/agents/{id}/chat/stream` | SSE：token / tool / interrupt / done / error | Bearer |
 | GET | `/api/v1/conversations` | 当前用户会话；可选 `?agent_id=` | Bearer |
 | GET | `/api/v1/conversations/{id}/messages` | 历史；非所有者 404 | Bearer |
+| GET | `/api/v1/runs/{run_id}` | 图是否暂停；`run_id` = conversation_id | Bearer |
+| POST | `/api/v1/runs/{run_id}/resume` | HITL：每个 tool call 单独勾选，一次提交 `decisions` | Bearer |
 
 ### 创建 Agent
 
@@ -73,7 +75,9 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
   "conversation_id": 10,
   "role": "assistant",
   "content": "89",
-  "created_at": "2026-08-15T00:00:00Z"
+  "created_at": "2026-08-15T00:00:00Z",
+  "status": "completed",
+  "pending": null
 }
 ```
 
@@ -86,23 +90,45 @@ event: token
 data: {"text":"你"}
 
 event: done
-data: {"conversation_id":10}
+data: {"conversation_id":10,"status":"completed"}
 ```
 
+危险工具会先推 `interrupt`，再 `done`（`status=interrupted`），不会执行工具。
+
 登录失败：HTTP 401，`{ "code": 401, "message": "邮箱或密码错误" }`。
+
+危险工具（当前为 `send_email`）会先停住，Chat 返回：
+
+```json
+{
+  "conversation_id": 10,
+  "role": "assistant",
+  "content": null,
+  "status": "interrupted",
+  "pending": {
+    "pending": [{ "id": "call_send_email_1", "name": "send_email", "arguments": { "to": "ops@eaap.com" } }]
+  }
+}
+```
+
+`GET /api/v1/runs/10` 可查看是否仍在等待。`POST /api/v1/runs/10/resume` 一次提交全部选择；每个 pending `id` 都必须有一条，漏选返回 400：
+
+```json
+{
+  "decisions": [
+    { "id": "call_send_email_1", "approved": true },
+    { "id": "call_send_email_2", "approved": false }
+  ]
+}
+```
+
+`approved: false` 的工具结果为 `user denied`，不会执行。`run_id` 等于 `conversation_id`。
 
 本机演示账号与完整 curl（含登录、建 Agent、两轮 Chat、拉历史）见 [JWT.md](../03-development/JWT.md) 第 12 节。
 
 ---
 
 ## 3. 计划中的端点
-
-### R2
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/runs/{run_id}` | 图执行状态 |
-| POST | `/runs/{run_id}/resume` | HITL 批准或拒绝 |
 
 ### R3
 

@@ -6,6 +6,8 @@ class BaseTool(ABC):
 
     description: str
 
+    requires_approval: bool = False
+
     @abstractmethod
     async def execute(
         self,

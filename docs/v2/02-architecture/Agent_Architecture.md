@@ -96,7 +96,7 @@ raise AgentRuntimeException
 messages: list[AIMessage]
 iteration: int
 pending_tool_calls: list | None
-hitl: { tool, args, approved } | None
+hitl: { pending: [{ id, name, arguments }], decisions: [{ id, approved }] } | None
 error: str | None
 ```
 

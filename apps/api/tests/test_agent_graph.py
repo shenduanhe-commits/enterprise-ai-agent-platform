@@ -9,9 +9,18 @@ from app.ai.runtime.agent_executor import AgentExecutor
 from app.ai.runtime.agent_graph import AgentGraph, run_graph, stream_graph
 from langgraph.checkpoint.memory import InMemorySaver
 from app.ai.tools.builtin.calculator import CalculatorTool
+from app.ai.tools.builtin.send_email import SendEmailTool
 from app.ai.tools.manager import ToolManager
 from app.ai.type import AIMessage
-from app.core.exceptions import AgentRuntimeException
+from app.core.exceptions import AgentRuntimeException, BusinessException
+
+
+def _hitl_tools() -> tuple[ToolManager, SendEmailTool]:
+    tools = ToolManager()
+    email = SendEmailTool()
+    tools.register(CalculatorTool())
+    tools.register(email)
+    return tools, email
 
 
 def _tools() -> ToolManager:
@@ -228,7 +237,7 @@ async def test_execute_stream_uses_graph_not_loop():
     ):
         events.append(event)
 
-    assert events[-1] == ("done", {"conversation_id": 1})
+    assert events[-1] == ("done", {"conversation_id": 1, "status": "completed"})
     assert "Mock AI Response" in saved["content"]
 
 
@@ -324,3 +333,342 @@ async def test_checkpointer_isolates_threads():
     )
 
     assert recorder.seen[1] == ["from-b"]
+
+
+def _decisions(pending: dict, approved: bool = True) -> list[dict]:
+    return [
+        {"id": item["id"], "approved": approved} for item in pending["pending"]
+    ]
+
+
+class TwoEmailsLLMProvider(BaseLLMProvider):
+    async def chat(
+        self,
+        model: str,
+        messages: list[AIMessage],
+        tools: list[dict] | None = None,
+    ) -> AIMessage:
+        if messages[-1].role == "tool":
+            results = [message.content for message in messages if message.role == "tool"]
+            return AIMessage(role="assistant", content=" | ".join(results[-2:]))
+        return AIMessage(
+            role="assistant",
+            content=None,
+            tool_calls=[
+                {
+                    "id": "call_send_email_1",
+                    "function": {
+                        "name": "send_email",
+                        "arguments": '{"to": "a@eaap.com", "subject": "a", "body": "a"}',
+                    },
+                },
+                {
+                    "id": "call_send_email_2",
+                    "function": {
+                        "name": "send_email",
+                        "arguments": '{"to": "b@eaap.com", "subject": "b", "body": "b"}',
+                    },
+                },
+            ],
+        )
+
+
+@pytest.mark.asyncio
+async def test_hitl_pauses_before_send_email():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    result = await graph.run(
+        [AIMessage(role="user", content="请发邮件给老板")],
+        thread_id="hitl-1",
+    )
+
+    assert result.status == "interrupted"
+    assert result.pending["pending"][0]["name"] == "send_email"
+    assert email.sent == []
+
+
+@pytest.mark.asyncio
+async def test_hitl_resume_approved_sends_email():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    result = await graph.run(
+        [AIMessage(role="user", content="请发邮件给老板")],
+        thread_id="hitl-2",
+    )
+    result = await graph.resume("hitl-2", _decisions(result.pending, True))
+
+    assert result.status == "completed"
+    assert email.sent
+    assert "已发送" in (result.message.content or "")
+
+
+@pytest.mark.asyncio
+async def test_hitl_resume_denied_does_not_send():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    paused = await graph.run(
+        [AIMessage(role="user", content="请发邮件给老板")],
+        thread_id="hitl-3",
+    )
+    result = await graph.resume("hitl-3", _decisions(paused.pending, False))
+
+    assert result.status == "completed"
+    assert email.sent == []
+    assert "user denied" in (result.message.content or "")
+
+
+@pytest.mark.asyncio
+async def test_hitl_resume_requires_every_pending_id():
+    saver = InMemorySaver()
+    tools, _ = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": TwoEmailsLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    paused = await graph.run(
+        [AIMessage(role="user", content="请发两封邮件")],
+        thread_id="hitl-missing",
+    )
+
+    with pytest.raises(BusinessException, match="每个待审批工具"):
+        await graph.resume(
+            "hitl-missing",
+            [{"id": paused.pending["pending"][0]["id"], "approved": True}],
+        )
+
+
+@pytest.mark.asyncio
+async def test_hitl_mixed_decisions_in_one_resume():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": TwoEmailsLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    paused = await graph.run(
+        [AIMessage(role="user", content="请发两封邮件")],
+        thread_id="hitl-mixed",
+    )
+    assert [item["id"] for item in paused.pending["pending"]] == [
+        "call_send_email_1",
+        "call_send_email_2",
+    ]
+
+    result = await graph.resume(
+        "hitl-mixed",
+        [
+            {"id": "call_send_email_1", "approved": True},
+            {"id": "call_send_email_2", "approved": False},
+        ],
+    )
+
+    assert result.status == "completed"
+    assert email.sent == [{"to": "a@eaap.com", "subject": "a", "body": "a"}]
+    assert "已发送" in (result.message.content or "")
+    assert "user denied" in (result.message.content or "")
+
+
+@pytest.mark.asyncio
+async def test_hitl_survives_new_graph_instance():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    first = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    paused = await first.run(
+        [AIMessage(role="user", content="请发邮件给老板")],
+        thread_id="hitl-4",
+    )
+
+    restarted = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    status = await restarted.get_status("hitl-4")
+    assert status["status"] == "interrupted"
+    result = await restarted.resume("hitl-4", _decisions(paused.pending, True))
+
+    assert result.status == "completed"
+    assert email.sent
+
+
+@pytest.mark.asyncio
+async def test_calculator_does_not_require_approval():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    result = await graph.run(
+        [AIMessage(role="user", content="12*7+5")],
+        thread_id="hitl-calc",
+    )
+
+    assert result.status == "completed"
+    assert result.message.content == "计算结果是 89"
+    assert email.sent == []
+
+
+@pytest.mark.asyncio
+async def test_hitl_without_checkpointer_raises():
+    tools, _ = _hitl_tools()
+    with pytest.raises(AgentRuntimeException, match="checkpointer"):
+        await run_graph(
+            LLMGateway({"mock": MockLLMProvider()}),
+            tools,
+            _agent(),
+            [AIMessage(role="user", content="请发邮件给老板")],
+        )
+
+
+@pytest.mark.asyncio
+async def test_hitl_blocks_new_turn_until_resume():
+    saver = InMemorySaver()
+    tools, _ = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+    )
+    await graph.run(
+        [AIMessage(role="user", content="请发邮件给老板")],
+        thread_id="hitl-block",
+    )
+
+    with pytest.raises(BusinessException, match="待审批"):
+        await graph.run(
+            [AIMessage(role="user", content="再聊一句")],
+            thread_id="hitl-block",
+        )
+
+
+def _fake_memory():
+    saved = {"user": [], "assistant": [], "pairs": []}
+
+    async def create_user_message(db, conversation_id, user_message):
+        saved["user"].append(user_message)
+        return SimpleNamespace(created_at=None)
+
+    async def create_assistant_message(db, conversation_id, assistant_message):
+        saved["assistant"].append(assistant_message)
+        return SimpleNamespace(created_at=None)
+
+    async def create_message(db, conversation_id, user_message, assistant_message):
+        saved["pairs"].append((user_message, assistant_message))
+        return SimpleNamespace(created_at=None)
+
+    async def fake_build(db, agent, conversation, user_message, variables):
+        return [AIMessage(role="user", content=user_message)]
+
+    return saved, SimpleNamespace(
+        create_user_message=create_user_message,
+        create_assistant_message=create_assistant_message,
+        create_message=create_message,
+    ), fake_build
+
+
+@pytest.mark.asyncio
+async def test_execute_pauses_then_resume_saves_assistant_only():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    saved, memory, fake_build = _fake_memory()
+    executor = AgentExecutor(
+        llm_gateway=LLMGateway({"mock": MockLLMProvider()}),
+        prompt_manager=None,
+        memory_manager=memory,
+        tool_manager=tools,
+        checkpointer=saver,
+    )
+    executor._build_messages = fake_build
+    conversation = SimpleNamespace(id=7)
+
+    paused = await executor.execute(
+        db=None,
+        agent=_agent(),
+        conversation=conversation,
+        user_message="请发邮件给老板",
+    )
+
+    assert paused.status == "interrupted"
+    assert paused.pending["pending"][0]["name"] == "send_email"
+    assert email.sent == []
+    assert saved["user"] == ["请发邮件给老板"]
+    assert saved["pairs"] == []
+    assert saved["assistant"] == []
+
+    done = await executor.resume(
+        None,
+        _agent(),
+        conversation,
+        _decisions(paused.pending, True),
+    )
+
+    assert done.status == "completed"
+    assert email.sent
+    assert saved["assistant"]
+    assert "已发送" in saved["assistant"][0]
+
+
+@pytest.mark.asyncio
+async def test_execute_stream_emits_interrupt_and_saves_user_only():
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    saved, memory, fake_build = _fake_memory()
+    executor = AgentExecutor(
+        llm_gateway=LLMGateway({"mock": MockLLMProvider()}),
+        prompt_manager=None,
+        memory_manager=memory,
+        tool_manager=tools,
+        checkpointer=saver,
+    )
+    executor._build_messages = fake_build
+
+    events: list[tuple[str, dict]] = []
+    async for event in executor.execute_stream(
+        db=None,
+        agent=_agent(),
+        conversation=SimpleNamespace(id=8),
+        user_message="请发邮件给老板",
+    ):
+        events.append(event)
+
+    kinds = [event for event, _ in events]
+    assert kinds.count("interrupt") == 1
+    assert events[-1] == (
+        "done",
+        {"conversation_id": 8, "status": "interrupted"},
+    )
+    assert email.sent == []
+    assert saved["user"] == ["请发邮件给老板"]
+    assert saved["pairs"] == []

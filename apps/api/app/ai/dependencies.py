@@ -29,6 +29,7 @@ from app.ai.runtime.agent_executor import (
 )
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from app.ai.tools.builtin.calculator import CalculatorTool
+from app.ai.tools.builtin.send_email import SendEmailTool
 from app.ai.tools.manager import ToolManager
 from app.core.config import settings
 from app.core.database import get_db
@@ -99,6 +100,7 @@ MemoryManagerDep = Annotated[MemoryManager, Depends(get_memory_manager)]
 def get_tool_manager() -> ToolManager:
     manager = ToolManager()
     manager.register(CalculatorTool())
+    manager.register(SendEmailTool())
     return manager
 
 

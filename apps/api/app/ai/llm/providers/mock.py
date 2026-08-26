@@ -23,9 +23,34 @@ class MockLLMProvider(BaseLLMProvider):
         # 上一轮已经执行过工具：Executor 会把 tool 结果追加进 messages。
         # 这时不能再返回 tool_calls，否则 run_loop 会一直转，直到超轮次。
         if last_message.role == "tool":
+            content = last_message.content or ""
+            if "已发送" in content or content == "user denied":
+                return AIMessage(role="assistant", content=content)
             return AIMessage(
                 role="assistant",
-                content=f"计算结果是 {last_message.content}",
+                content=f"计算结果是 {content}",
+            )
+
+        if self._should_call_send_email(last_message, tools):
+            return AIMessage(
+                role="assistant",
+                content=None,
+                tool_calls=[
+                    {
+                        "id": "call_send_email_1",
+                        "function": {
+                            "name": "send_email",
+                            "arguments": json.dumps(
+                                {
+                                    "to": "ops@eaap.com",
+                                    "subject": last_message.content or "",
+                                    "body": last_message.content or "",
+                                },
+                                ensure_ascii=False,
+                            ),
+                        },
+                    }
+                ],
             )
 
         # 用户提问 + 当前 Agent 挂了 calculator + 话里像算式
@@ -52,6 +77,23 @@ class MockLLMProvider(BaseLLMProvider):
             role="assistant",
             content=f"Mock AI Response: received '{last_message.content}'",
         )
+
+    def _should_call_send_email(
+        self,
+        last_message: AIMessage,
+        tools: list[dict] | None,
+    ) -> bool:
+        if last_message.role != "user" or not tools:
+            return False
+        names = [
+            tool.get("function", tool).get("name")
+            for tool in tools
+            if isinstance(tool, dict)
+        ]
+        if "send_email" not in names:
+            return False
+        text = (last_message.content or "").lower()
+        return "邮件" in text or "email" in text or "发信" in text
 
     def _should_call_calculator(
         self,

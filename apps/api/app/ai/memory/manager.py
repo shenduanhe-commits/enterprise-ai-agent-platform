@@ -55,15 +55,37 @@ class MemoryManager:
         """
         Save conversation messages.
         """
-        user_message_create = ConversationMessageCreate(
-            conversation_id=conversation_id, role="user", content=user_message
-        )
-        assistant_message_create = ConversationMessageCreate(
-            conversation_id=conversation_id, role="assistant", content=assistant_message
+        await self.create_user_message(db, conversation_id, user_message)
+        return await self.create_assistant_message(
+            db, conversation_id, assistant_message
         )
 
-        await self.repository.create(db, user_message_create)
-        conversation_message = await self.repository.create(
-            db, assistant_message_create
+    async def create_user_message(
+        self,
+        db: AsyncSession,
+        conversation_id: int,
+        user_message: str,
+    ) -> ConversationMessageResponse:
+        record = await self.repository.create(
+            db,
+            ConversationMessageCreate(
+                conversation_id=conversation_id, role="user", content=user_message
+            ),
         )
-        return ConversationMessageResponse.model_validate(conversation_message)
+        return ConversationMessageResponse.model_validate(record)
+
+    async def create_assistant_message(
+        self,
+        db: AsyncSession,
+        conversation_id: int,
+        assistant_message: str,
+    ) -> ConversationMessageResponse:
+        record = await self.repository.create(
+            db,
+            ConversationMessageCreate(
+                conversation_id=conversation_id,
+                role="assistant",
+                content=assistant_message,
+            ),
+        )
+        return ConversationMessageResponse.model_validate(record)
