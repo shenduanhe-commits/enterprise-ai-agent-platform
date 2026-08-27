@@ -237,7 +237,13 @@ async def test_execute_stream_uses_graph_not_loop():
     ):
         events.append(event)
 
-    assert events[-1] == ("done", {"conversation_id": 1, "status": "completed"})
+    event, done = events[-1]
+    assert event == "done"
+    assert done["conversation_id"] == 1
+    assert done["role"] == "assistant"
+    assert done["status"] == "completed"
+    assert done["pending"] is None
+    assert "Mock AI Response" in (done["content"] or "")
     assert "Mock AI Response" in saved["content"]
 
 
@@ -665,10 +671,13 @@ async def test_execute_stream_emits_interrupt_and_saves_user_only():
 
     kinds = [event for event, _ in events]
     assert kinds.count("interrupt") == 1
-    assert events[-1] == (
-        "done",
-        {"conversation_id": 8, "status": "interrupted"},
-    )
+    event, done = events[-1]
+    assert event == "done"
+    assert done["conversation_id"] == 8
+    assert done["role"] == "assistant"
+    assert done["status"] == "interrupted"
+    assert done["content"] is None
+    assert done["pending"]["pending"][0]["name"] == "send_email"
     assert email.sent == []
     assert saved["user"] == ["请发邮件给老板"]
     assert saved["pairs"] == []

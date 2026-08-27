@@ -10,7 +10,7 @@ def format_sse(event: str, data: dict) -> str:
         data: {"text":"你"}
 
         event: done
-        data: {"conversation_id":10}
+        data: {"conversation_id":10,"status":"completed",...}
 
     注意末尾必须有一个空行（\\n\\n），客户端才知道这一帧结束。
     """

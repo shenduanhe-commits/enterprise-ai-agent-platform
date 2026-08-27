@@ -62,27 +62,23 @@ class AgentExecutor:
             await self.memory_manager.create_user_message(
                 db, conversation.id, user_message
             )
-            return ChatResponse(
-                conversation_id=conversation.id,
-                role="assistant",
-                content=None,
+            return self._chat_response(
+                conversation.id,
                 status="interrupted",
                 pending=outcome.pending,
             )
 
+        content = outcome.message.content if outcome.message else None
         message: ConversationMessageResponse = await self.memory_manager.create_message(
             db,
             conversation_id=conversation.id,
             user_message=user_message,
-            assistant_message=outcome.message.content if outcome.message else "",
+            assistant_message=content or "",
         )
-
-        return ChatResponse(
-            conversation_id=conversation.id,
-            role="assistant",
-            content=outcome.message.content if outcome.message else None,
+        return self._chat_response(
+            conversation.id,
+            content=content,
             created_at=message.created_at,
-            status="completed",
         )
 
     # SSE 走这里
@@ -113,19 +109,29 @@ class AgentExecutor:
             await self.memory_manager.create_user_message(
                 db, conversation.id, user_message
             )
-            yield "done", {
-                "conversation_id": conversation.id,
-                "status": "interrupted",
-            }
+            yield "done", self._chat_payload(
+                self._chat_response(
+                    conversation.id,
+                    status="interrupted",
+                    pending=interrupted,
+                )
+            )
             return
 
-        await self.memory_manager.create_message(
+        content = "".join(token_parts) or None
+        message = await self.memory_manager.create_message(
             db,
             conversation_id=conversation.id,
             user_message=user_message,
-            assistant_message="".join(token_parts),
+            assistant_message=content or "",
         )
-        yield "done", {"conversation_id": conversation.id, "status": "completed"}
+        yield "done", self._chat_payload(
+            self._chat_response(
+                conversation.id,
+                content=content,
+                created_at=message.created_at,
+            )
+        )
 
     async def resume(
         self,
@@ -136,24 +142,41 @@ class AgentExecutor:
     ) -> ChatResponse:
         outcome = await self._graph(agent).resume(str(conversation.id), decisions)
         if outcome.status == "interrupted":
-            return ChatResponse(
-                conversation_id=conversation.id,
-                role="assistant",
-                content=None,
+            return self._chat_response(
+                conversation.id,
                 status="interrupted",
                 pending=outcome.pending,
             )
-        content = outcome.message.content if outcome.message else ""
+        content = outcome.message.content if outcome.message else None
         message = await self.memory_manager.create_assistant_message(
             db, conversation.id, content or ""
         )
-        return ChatResponse(
-            conversation_id=conversation.id,
-            role="assistant",
+        return self._chat_response(
+            conversation.id,
             content=content,
             created_at=message.created_at,
-            status="completed",
         )
+
+    def _chat_response(
+        self,
+        conversation_id: int,
+        *,
+        content: str | None = None,
+        status: str = "completed",
+        pending: dict | None = None,
+        created_at=None,
+    ) -> ChatResponse:
+        return ChatResponse(
+            conversation_id=conversation_id,
+            role="assistant",
+            content=content,
+            created_at=created_at,
+            status=status,
+            pending=pending,
+        )
+
+    def _chat_payload(self, response: ChatResponse) -> dict:
+        return response.model_dump(mode="json")
 
     async def get_run_status(
         self, agent: AgentResponse, conversation: ConversationResponse

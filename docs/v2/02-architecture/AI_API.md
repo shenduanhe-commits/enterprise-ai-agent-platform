@@ -90,10 +90,10 @@ event: token
 data: {"text":"你"}
 
 event: done
-data: {"conversation_id":10,"status":"completed"}
+data: {"conversation_id":10,"role":"assistant","content":"...","created_at":null,"status":"completed","pending":null}
 ```
 
-危险工具会先推 `interrupt`，再 `done`（`status=interrupted`），不会执行工具。
+过程事件是 `token` / `tool` / `interrupt`。最后一帧 `done` 的 `data` 与非流式 `ChatResponse` 相同。危险工具会先推 `interrupt`，再 `done`（`status=interrupted`，带 `pending`），不会执行工具。
 
 登录失败：HTTP 401，`{ "code": 401, "message": "邮箱或密码错误" }`。
 
