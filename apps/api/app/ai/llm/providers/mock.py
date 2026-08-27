@@ -17,19 +17,18 @@ class MockLLMProvider(BaseLLMProvider):
         model: str,
         messages: list[AIMessage],
         tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> AIMessage:
         last_message = messages[-1]
+        _ = response_format
 
         # 上一轮已经执行过工具：Executor 会把 tool 结果追加进 messages。
         # 这时不能再返回 tool_calls，否则 run_loop 会一直转，直到超轮次。
         if last_message.role == "tool":
             content = last_message.content or ""
             if "已发送" in content or content == "user denied":
-                return AIMessage(role="assistant", content=content)
-            return AIMessage(
-                role="assistant",
-                content=f"计算结果是 {content}",
-            )
+                return self._final(content)
+            return self._final(f"计算结果是 {content}")
 
         if self._should_call_send_email(last_message, tools):
             return AIMessage(
@@ -72,10 +71,13 @@ class MockLLMProvider(BaseLLMProvider):
                 ],
             )
 
-        # 普通闲聊：只回文本，run_loop 看到没有 tool_calls 就会结束。
+        # 普通闲聊：只回 JSON 最终答案，run_loop 看到没有 tool_calls 就会结束。
+        return self._final(f"Mock AI Response: received '{last_message.content}'")
+
+    def _final(self, answer: str) -> AIMessage:
         return AIMessage(
             role="assistant",
-            content=f"Mock AI Response: received '{last_message.content}'",
+            content=json.dumps({"answer": answer}, ensure_ascii=False),
         )
 
     def _should_call_send_email(

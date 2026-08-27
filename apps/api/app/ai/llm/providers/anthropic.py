@@ -139,8 +139,10 @@ class AnthropicProvider(BaseLLMProvider):
         model: str,
         messages: list[AIMessage],
         tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> AIMessage:
         system, anth_messages = to_anthropic_payload(messages)
+        _ = response_format
         kwargs: dict = {
             "model": model,
             "max_tokens": 1024,

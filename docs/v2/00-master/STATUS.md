@@ -3,14 +3,14 @@
 | 项目 | 内容 |
 | --- | --- |
 | 版本 | V2.1 |
-| 更新日期 | 2026-08-26 |
+| 更新日期 | 2026-08-27 |
 | 替代 | 根目录 `EAAP_STATUS.md`、`PROJECT_CHANGELOG.md`（V1，已过期） |
 
 ---
 
 ## 1. 一句话
 
-后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 与手写 LangGraph 已接通，危险工具可 HITL 暂停。**R2 进行中**（checkpoint + interrupt；Structured output / Langfuse 未做）。前端演示壳仍未接。
+后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 与手写 LangGraph 已接通，危险工具可 HITL 暂停。最终回复在 `content`。**R2 进行中**（Structured output 未在 Chat 启用；节点轨迹 / Langfuse 未做）。前端演示壳仍未接。
 
 ---
 
@@ -56,6 +56,7 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 - `AgentExecutor`：非流式/SSE 走 `StateGraph`；loop 留下对照。
 - LangGraph：手写图；Postgres checkpointer（连不上则内存）；`thread_id = conversation_id`。
 - HITL：`send_email` 需批准；每个 tool call 单独勾选，一次 `/runs/{id}/resume` 提交 `decisions`。
+- Gateway 预留 `response_format`（OpenAI/Qwen 可转发）；Chat 图未传。最终若是 `{ "answer" }` JSON 则拆进 `content`，真实模型多为散文原样。不算 Structured output 已落地。
 - Qwen、OpenAI 解析 OpenAI 形态 `tool_calls`；Anthropic 走 `messages.create` + `tool_use`。
 - `PromptManager`：优先最新 Prompt 模板，否则 Agent `system_prompt`。
 - `MemoryManager`：最近 10 条消息。
@@ -67,7 +68,7 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 
 ### 测试
 
-- pytest：含 `test_agent_graph.py`（图 / checkpoint / HITL）。
+- pytest：含 `test_agent_graph.py`（图 / checkpoint / HITL）、`test_structured.py`。
 - 连库手写脚本已用 `if __name__ == "__main__"` 保护。
 
 ---
@@ -78,19 +79,18 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 2. SSE `token` 是整段回答切块，不是模型真流式。
 3. 会话 `update` / `delete` 尚未挂路由，Service 层也不带 `user_id`。
 4. 前端未接登录 / Agent / Chat。
-5. R2 剩余：Structured output、节点轨迹 / Langfuse。
+5. R2 剩余：Chat 启用 Structured output（需额外一轮或独立抽取接口）、节点轨迹 / Langfuse。
 
 ---
 
 ## 5. 下一步
 
-R2 已有图、checkpoint、HITL。**不要开 RAG**，除非明确开始 R3。
+R2 已有图、checkpoint、HITL。Structured output 未在对话路径启用。**不要开 RAG**，除非明确开始 R3。
 
 下一步可选：
 
-1. Structured output（最终答案结构化）。
-2. 节点可查（表或 Langfuse）。
-3. 前端一个「批准」按钮，或继续 Swagger。
+1. 节点可查（表或 Langfuse）。
+2. 前端一个「批准」按钮，或继续 Swagger。
 
 本机演示账号：`user@eaap.com` / `user`（仅开发库）。
 
@@ -100,6 +100,7 @@ R2 已有图、checkpoint、HITL。**不要开 RAG**，除非明确开始 R3。
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-27 | R2：Gateway 预留 response_format；JSON 最终答案可拆进 content（Chat 未启用结构化输出） |
 | 2026-08-26 | R2：StateGraph + checkpoint + HITL（send_email / resume） |
 | 2026-08-18 | R0 闭环 + R1 后端：JWT access/refresh、SSE、会话历史；OpenAI/Anthropic tool 解析对齐 |
 | 2026-08-18 | 测试命名：`text_agent_service.py` → `test_agent_service.py`；`conversation_message_service` 拼写已改 |

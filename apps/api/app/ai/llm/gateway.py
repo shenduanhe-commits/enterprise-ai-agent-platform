@@ -13,14 +13,18 @@ class LLMGateway:
         model: str,
         messages: list[AIMessage],
         tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> AIMessage:
 
         llm_provider = self.providers.get(provider)
         if not llm_provider:
             raise LLMException(f"Unsupported provider: {provider}")
 
-        return await llm_provider.chat(
-            model=model,
-            messages=messages,
-            tools=tools,
-        )
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "tools": tools,
+        }
+        if response_format:
+            kwargs["response_format"] = response_format
+        return await llm_provider.chat(**kwargs)

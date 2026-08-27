@@ -81,7 +81,7 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 }
 ```
 
-`conversation_id` 为空则按 `user_message` 建会话。
+`conversation_id` 为空则按 `user_message` 建会话。助手回复只在 `content`。检索引用等系统信息以后用单独字段（如 `citations`），不要再包一层和 `content` 重复的 `output`。
 
 SSE 示例：
 

@@ -10,6 +10,7 @@ from langgraph.types import Command, interrupt
 from typing_extensions import TypedDict
 
 from app.ai.llm.gateway import LLMGateway
+from app.ai.structured import parse_final_answer
 from app.ai.tools.manager import ToolManager
 from app.ai.tools.parser import parse_tool_call_arguments
 from app.ai.type import AIMessage
@@ -148,10 +149,7 @@ class AgentGraph:
             pending = first.value if hasattr(first, "value") else first
             return GraphRunResult(status="interrupted", pending=pending)
         last = final["messages"][-1]
-        return GraphRunResult(
-            status="completed",
-            message=AIMessage(role="assistant", content=last.content),
-        )
+        return GraphRunResult(status="completed", message=last)
 
     # 流式 /chat/stream 走这里
     async def stream(
@@ -185,7 +183,9 @@ class AgentGraph:
             tools=self.tool_manager.get_schemas(),
         )
         if not response.tool_calls:
-            for chunk in iter_token_chunks(response.content or ""):
+            parsed = parse_final_answer(response.content)
+            response = AIMessage(role="assistant", content=parsed.answer)
+            for chunk in iter_token_chunks(parsed.answer):
                 _emit(("token", {"text": chunk}))
         return {"messages": [response], "iteration": iteration}
 

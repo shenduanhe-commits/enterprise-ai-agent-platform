@@ -62,7 +62,7 @@ V1 一上来画 Supervisor 多 Agent。V2 承认：**先把单 Agent 做成可�
 | --- | --- | --- |
 | `AgentExecutor` | for-loop，最多 5 轮 | 对照实现，保留 |
 | LangGraph `StateGraph` | 无 | R2 生产路径 |
-| `LLMGateway` | chat；OpenAI 未解析 tool_calls | 统一 tool_calls + stream + structured |
+| `LLMGateway` | chat + tool_calls；`response_format` 预留 | 图侧按需传入；真流式仍缺 |
 | `PromptManager` | 最新 prompt 或 system_prompt | 保留；变量渲染已有 |
 | `MemoryManager` | 最近 10 条 | 与 checkpoint 分工：Memory=对话，Checkpoint=图状态 |
 | `ToolManager` | 内存注册 calculator | R4 注册表 + MCP |

@@ -15,15 +15,17 @@ class OpenAIProvider(BaseLLMProvider):
         model: str,
         messages: list[AIMessage],
         tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> AIMessage:
+        kwargs: dict = {
+            "model": model,
+            "messages": [message.model_dump(exclude_none=True) for message in messages],
+            "tools": tools,
+        }
+        if response_format:
+            kwargs["response_format"] = response_format
         try:
-            response = await self.client.chat.completions.create(
-                model=model,
-                messages=[
-                    message.model_dump(exclude_none=True) for message in messages
-                ],
-                tools=tools,
-            )
+            response = await self.client.chat.completions.create(**kwargs)
         except APIError as e:
             raise LLMException(f"Failed to chat with OpenAI: {e}") from e
         try:

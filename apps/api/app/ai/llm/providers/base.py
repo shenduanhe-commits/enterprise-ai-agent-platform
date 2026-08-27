@@ -14,6 +14,7 @@ class BaseLLMProvider(ABC):
         model: str,
         messages: list[AIMessage],
         tools: list[dict] | None = None,
+        response_format: dict | None = None,
     ) -> AIMessage:
         """
         Execute chat completion.

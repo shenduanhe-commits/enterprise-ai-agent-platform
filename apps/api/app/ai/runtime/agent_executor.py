@@ -6,6 +6,7 @@ from app.ai.llm.gateway import LLMGateway
 from app.ai.memory.manager import MemoryManager
 from app.ai.prompts.manager import PromptManager
 from app.ai.runtime.agent_graph import AgentGraph, iter_token_chunks
+from app.ai.structured import parse_final_answer
 from app.ai.tools.manager import ToolManager
 from app.ai.tools.parser import parse_tool_call_arguments
 from app.ai.type import AIMessage
@@ -235,7 +236,8 @@ class AgentExecutor:
             )
 
             if not response.tool_calls:
-                for chunk in iter_token_chunks(response.content or ""):
+                parsed = parse_final_answer(response.content)
+                for chunk in iter_token_chunks(parsed.answer):
                     yield "token", {"text": chunk}
                 return
 
