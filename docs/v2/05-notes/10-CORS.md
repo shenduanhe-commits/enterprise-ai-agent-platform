@@ -5,8 +5,8 @@
 | 版本 | V2.1 |
 | 日期 | 2026-08-20 |
 | 对照代码 | 本仓库 **尚未** 加 `CORSMiddleware`；接 Vue 演示壳时再加 |
-| Token | [JWT.md](JWT.md) |
-| 传输 | [HTTPS.md](HTTPS.md) |
+| Token | [08-JWT.md](08-JWT.md) |
+| 传输 | [09-HTTPS.md](09-HTTPS.md) |
 
 跨源时容易把 CORS 想成 FastAPI 的门禁（像验 JWT）。它不是。本文只讲浏览器、预检、curl 各干什么。
 
@@ -97,7 +97,7 @@ HttpOnly 表示 JS 读不到 `document.cookie`，XSS 不能把 refresh **字符�
 
 Cookie **只会带给种下它的那台主机**（还要匹配 Path）。`fetch('https://evil.com')` **不会**带上你接口的登录 Cookie。XSS 仍能害你，是因为脚本在**你的页面**里，可以 `fetch` **正确的 FastAPI**（这时才会带 Cookie），再把返回的 JSON 发到外部。
 
-挡的是「长期票被拷走换设备用」，不是「本页内不能冒充你调接口」。正道仍是输出转义 / CSP。设计取舍见 [JWT.md](JWT.md) 第 9 节。
+挡的是「长期票被拷走换设备用」，不是「本页内不能冒充你调接口」。正道仍是输出转义 / CSP。设计取舍见 [08-JWT.md](08-JWT.md) 第 9 节。
 
 ---
 

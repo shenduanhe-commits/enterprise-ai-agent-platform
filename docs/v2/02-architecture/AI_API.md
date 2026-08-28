@@ -13,7 +13,7 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 ## 1. 约定
 
 - JSON；`Content-Type: application/json`。
-- 需登录的接口：`Authorization: Bearer <access_token>`。签发与校验见 [JWT.md](../03-development/JWT.md)。
+- 需登录的接口：`Authorization: Bearer <access_token>`。签发与校验见 [JWT.md](../05-notes/08-JWT.md)。
 - 成功：直接返回资源（FastAPI `response_model`）。不要混用 `{ code, message, data }` 包一层。
 - 错误：`EAAPException` → JSON `{ "code", "message" }`，HTTP 状态见 [Request_Handle.md](../03-development/Request_Handle.md)。
 
@@ -40,6 +40,7 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 | GET | `/api/v1/conversations` | 当前用户会话；可选 `?agent_id=` | Bearer |
 | GET | `/api/v1/conversations/{id}/messages` | 历史；非所有者 404 | Bearer |
 | GET | `/api/v1/runs/{run_id}` | 图是否暂停；`run_id` = conversation_id | Bearer |
+| GET | `/api/v1/runs/{run_id}/spans` | 节点轨迹（耗时 / 工具名 / ok·error）；仅会话主人 | Bearer |
 | POST | `/api/v1/runs/{run_id}/resume` | HITL：每个 tool call 单独勾选，一次提交 `decisions` | Bearer |
 
 ### 创建 Agent
@@ -124,7 +125,36 @@ data: {"conversation_id":10,"role":"assistant","content":"...","created_at":null
 
 `approved: false` 的工具结果为 `user denied`，不会执行。`run_id` 等于 `conversation_id`。
 
-本机演示账号与完整 curl（含登录、建 Agent、两轮 Chat、拉历史）见 [JWT.md](../03-development/JWT.md) 第 12 节。
+`GET /api/v1/runs/10/spans` 按时间返回该会话的图节点（不存完整 prompt / messages）：
+
+```json
+[
+  {
+    "id": 1,
+    "conversation_id": 10,
+    "node": "call_model",
+    "started_at": "2026-08-27T10:00:00Z",
+    "duration_ms": 12,
+    "tool_name": null,
+    "status": "ok",
+    "error": null
+  },
+  {
+    "id": 2,
+    "conversation_id": 10,
+    "node": "execute_tools",
+    "started_at": "2026-08-27T10:00:00Z",
+    "duration_ms": 3,
+    "tool_name": "calculator",
+    "status": "ok",
+    "error": null
+  }
+]
+```
+
+计算器一轮通常是 `call_model` → `execute_tools` → `call_model`。HITL 暂停时往往只有已跑完的 `call_model`；`resume` 后再出现 `execute_tools`。未登录 401；别人的会话 404。
+
+本机演示账号与完整 curl（含登录、建 Agent、两轮 Chat、拉历史）见 [JWT.md](../05-notes/08-JWT.md) 第 12 节。
 
 ---
 

@@ -6,7 +6,7 @@
 | 日期 | 2026-08-20 |
 | 读者 | 前端转后端时搞清「抓包能看到什么」 |
 | 原则清单 | [Security.md](../04-operations/Security.md) |
-| Token 机制 | [JWT.md](JWT.md) |
+| Token 机制 | [08-JWT.md](08-JWT.md) |
 
 本地 R1 用 `http://localhost:8000`，没有 TLS。本文说明 **HTTPS 实际加密了什么、私钥干什么、地址会不会被看见**。不是证书运维手册。
 
@@ -98,4 +98,4 @@ HTTPS 保证的是：**传输路上不被偷看、不被改**。两端本来就�
 - R0–R5 本地 HTTP 可接受，见 [Security.md](../04-operations/Security.md)。不要把 `localhost` 演示暴露到公网。
 - 对外必须 HTTPS。Refresh 再考虑 HttpOnly Cookie，避免它和 access 一样频繁出现在普通请求头里。
 - 部署形态见 [Deployment.md](../04-operations/Deployment.md)；R6 前不要求自签证书作业。
-- 演示壳跨源（5173 → 8000）时要加 CORS，见 [CORS.md](CORS.md)。
+- 演示壳跨源（5173 → 8000）时要加 CORS，见 [10-CORS.md](10-CORS.md)。

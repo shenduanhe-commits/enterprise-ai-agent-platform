@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -16,3 +18,28 @@ class RunResponse(BaseModel):
     pending: dict | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RunSpanResponse(BaseModel):
+    """一次图节点执行。不存完整 prompt / messages。"""
+
+    id: int
+    conversation_id: int
+    node: str
+    started_at: datetime
+    duration_ms: int
+    tool_name: str | None = None
+    status: str
+    error: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RunSpanCreate(BaseModel):
+    conversation_id: int
+    node: str
+    started_at: datetime
+    duration_ms: int
+    tool_name: str | None = None
+    status: str
+    error: str | None = None

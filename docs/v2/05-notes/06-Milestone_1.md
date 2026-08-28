@@ -145,7 +145,7 @@ apps/api
 │
 └── app
 
-sqlalchemy asyncpg alembic psycopg2-binary的详细使用说明请参考：EAAP_DATABASE_USE.md
+sqlalchemy asyncpg alembic psycopg2-binary的详细使用说明请参考：[03-Database.md](03-Database.md)
 
 Step 1.2 创建 Pydantic Schema Layer
 目标

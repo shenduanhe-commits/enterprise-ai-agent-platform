@@ -12,6 +12,7 @@ from app.models.base import Base
 if TYPE_CHECKING:
     from app.models.agent import Agent
     from app.models.conversation_message import ConversationMessage
+    from app.models.run_span import RunSpan
     from app.models.user import User
 
 
@@ -43,5 +44,9 @@ class Conversation(Base):
     )
 
     conversation_messages: Mapped[list[ConversationMessage]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan"
+    )
+
+    run_spans: Mapped[list[RunSpan]] = relationship(
         back_populates="conversation", cascade="all, delete-orphan"
     )

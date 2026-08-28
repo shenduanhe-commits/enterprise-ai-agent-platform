@@ -63,6 +63,10 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 deactivate 退出虚拟环境命令
 
+注意：如果项目更换了存储位置，使用uv run xxx 会报错：uv trampoline failed to canonicalize script path。无法将脚本路径规范化为标准路径。
+但是这时\.venv\Scripts\python.exe还能用，只是直接用uv run 命令会有问题。
+解决方法：删掉venv，使用uv sync命令重新安装venv和项目依赖
+
 # pnpm 与 uv 对照总结
 
 两者都是包管理工具：pnpm 管前端/Node，uv 管 Python。你们仓库里正好各用一个。

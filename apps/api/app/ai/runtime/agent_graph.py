@@ -1,10 +1,14 @@
+import logging
 import operator
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.config import get_stream_writer
+from langgraph.errors import GraphBubbleUp
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 from typing_extensions import TypedDict
@@ -15,6 +19,10 @@ from app.ai.tools.manager import ToolManager
 from app.ai.tools.parser import parse_tool_call_arguments
 from app.ai.type import AIMessage
 from app.core.exceptions import AgentRuntimeException, BusinessException
+
+logger = logging.getLogger(__name__)
+
+SpanRecorder = Callable[..., Awaitable[None]]
 
 _MAX_ITERATIONS = 5
 _TOKEN_CHUNK_SIZE = 8
@@ -54,11 +62,15 @@ class AgentGraph:
         tool_manager: ToolManager,
         agent: Any,
         checkpointer: BaseCheckpointSaver | None = None,
+        span_recorder: SpanRecorder | None = None,
+        conversation_id: int | None = None,
     ):
         self.llm_gateway = llm_gateway
         self.tool_manager = tool_manager
         self.agent = agent
         self._checkpointer = checkpointer
+        self._span_recorder = span_recorder
+        self._conversation_id = conversation_id
         self._graph = self._build()
 
     # 构建 StateGraph
@@ -170,24 +182,95 @@ class AgentGraph:
             pending = snapshot.interrupts[0].value
             yield ("interrupt", pending)
 
+    @asynccontextmanager
+    async def _node_span(self, node: str, tool_name: str | None = None):
+        started_at = datetime.now(UTC)
+        try:
+            yield
+        except GraphBubbleUp:
+            raise
+        except Exception as exc:
+            await self._record_span(
+                node,
+                started_at,
+                tool_name=tool_name,
+                status="error",
+                error=str(exc),
+            )
+            raise
+        else:
+            await self._record_span(
+                node,
+                started_at,
+                tool_name=tool_name,
+                status="ok",
+            )
+
+    async def _record_span(
+        self,
+        node: str,
+        started_at: datetime,
+        *,
+        tool_name: str | None,
+        status: str,
+        error: str | None = None,
+    ) -> None:
+        duration_ms = max(
+            0, int((datetime.now(UTC) - started_at).total_seconds() * 1000)
+        )
+        logger.info(
+            "run_span conversation_id=%s node=%s status=%s duration_ms=%s "
+            "tool_name=%s error=%s",
+            self._conversation_id,
+            node,
+            status,
+            duration_ms,
+            tool_name,
+            error,
+        )
+        if self._span_recorder is None:
+            return
+        try:
+            await self._span_recorder(
+                node=node,
+                started_at=started_at,
+                duration_ms=duration_ms,
+                tool_name=tool_name,
+                status=status,
+                error=error,
+            )
+        except Exception:
+            logger.exception("failed to persist run_span node=%s", node)
+
+    def _tool_name_for_calls(self, calls: list[dict]) -> str | None:
+        names = [
+            call["function"]["name"]
+            for call in calls
+            if call.get("function", {}).get("name")
+        ]
+        if not names:
+            return None
+        return ",".join(names)
+
     # 调用模型
     async def _call_model(self, state: AgentGraphState) -> dict:
-        iteration = state.get("iteration", 0) + 1
-        if iteration > _MAX_ITERATIONS:
-            raise AgentRuntimeException("Agent execution exceeded max iterations")
+        async with self._node_span("call_model"):
+            iteration = state.get("iteration", 0) + 1
+            if iteration > _MAX_ITERATIONS:
+                raise AgentRuntimeException("Agent execution exceeded max iterations")
 
-        response = await self.llm_gateway.chat(
-            provider=self.agent.provider,
-            model=self.agent.model_name,
-            messages=state["messages"],
-            tools=self.tool_manager.get_schemas(),
-        )
-        if not response.tool_calls:
-            parsed = parse_final_answer(response.content)
-            response = AIMessage(role="assistant", content=parsed.answer)
-            for chunk in iter_token_chunks(parsed.answer):
-                _emit(("token", {"text": chunk}))
-        return {"messages": [response], "iteration": iteration}
+            response = await self.llm_gateway.chat(
+                provider=self.agent.provider,
+                model=self.agent.model_name,
+                messages=state["messages"],
+                tools=self.tool_manager.get_schemas(),
+            )
+            if not response.tool_calls:
+                parsed = parse_final_answer(response.content)
+                response = AIMessage(role="assistant", content=parsed.answer)
+                for chunk in iter_token_chunks(parsed.answer):
+                    _emit(("token", {"text": chunk}))
+            return {"messages": [response], "iteration": iteration}
 
     # 路由
     def _route(self, state: AgentGraphState):
@@ -200,6 +283,10 @@ class AgentGraph:
     async def _execute_tools(self, state: AgentGraphState) -> dict:
         last = state["messages"][-1]
         calls = last.tool_calls or []
+        async with self._node_span("execute_tools", self._tool_name_for_calls(calls)):
+            return await self._run_tools(calls)
+
+    async def _run_tools(self, calls: list[dict]) -> dict:
         pending = self._approval_payload(calls)
         approved_by_id: dict[str, bool] = {}
         if pending:

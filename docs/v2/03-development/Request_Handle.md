@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 版本 | V2.1 |
-| 替代 | 根目录 `EAAP_Request_Handle.md` |
+| 替代 | 学习笔记 [04-Request_Handle.md](../05-notes/04-Request_Handle.md) |
 
 ---
 

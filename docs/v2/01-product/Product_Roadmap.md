@@ -74,6 +74,8 @@ R0 基线 → R1 鉴权与流式 → R2 LangGraph → R3 RAG → R4 MCP → R5 �
 
 验收：对照测试通过；杀进程后可恢复；发送类工具必须先 resume。
 
+**2026-08-28 后端验收**：上表除「最终答案 Structured output」「页面批准按钮」外已落地。Structured output 与前端明确不做；Langfuse 属 R6。
+
 ---
 
 ## 5. R3 — 企业 RAG（5 周）
@@ -148,8 +150,8 @@ R0 基线 → R1 鉴权与流式 → R2 LangGraph → R3 RAG → R4 MCP → R5 �
 | --- | --- | --- |
 | 已完成的工程基础 | M0 | 已完成 |
 | 部分 Agent CRUD + 自研 loop | M1/M2 碎片 | 已预支 |
-| R0–R1 | M1 认证 + V1 Phase1 Chat | 未做完 |
-| R2 | M2 Runtime（框架级） | 未做 |
+| R0–R1 | M1 认证 + V1 Phase1 Chat | 后端完成；前端选修 |
+| R2 | M2 Runtime（框架级） | 后端完成 |
 | R3 | V1 Phase2 Knowledge | 未做 |
 | R4–R5 | V1 Phase3–5 的工具与协作 | 未做 |
 | R6 | M4 的薄切片 | 未做 |

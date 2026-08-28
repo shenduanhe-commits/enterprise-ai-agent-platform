@@ -71,7 +71,22 @@ V1 的 username/department/status 未建。R1 不必补部门；R6 若做 RBAC �
 | content | text | |
 | created_at | timestamptz | |
 
-目标（R2+）：可选 `tool_call_id`、`metadata` JSON（citation、agent_name）。
+给人看的历史。不含图里的 tool 中间态。
+
+### run_span
+
+| 列 | 类型 | 说明 |
+| --- | --- | --- |
+| id | int PK | |
+| conversation_id | FK conversation.id ON DELETE CASCADE | |
+| node | varchar(50) | `call_model` / `execute_tools` |
+| started_at | timestamptz | |
+| duration_ms | int | |
+| tool_name | varchar(100) null | `call_model` 为空 |
+| status | varchar(20) | ok / error |
+| error | text null | |
+
+一次图节点执行。不存完整 prompt。`GET /api/v1/runs/{id}/spans`。HITL 暂停时往往只有已跑完的 `call_model`。
 
 ---
 
@@ -85,8 +100,8 @@ V1 的 username/department/status 未建。R1 不必补部门；R6 若做 RBAC �
 
 ### R2
 
-- `agent_run` 或依赖 LangGraph checkpointer 自带表。
-- 若自建 trace：`run_id`、`conversation_id`、`node`、`payload`、`duration_ms`。
+- LangGraph checkpointer 自带表（`lifespan` 里 `setup()`）。
+- 自建轨迹：`run_span`（已落地，见上）。
 
 ### R3
 
@@ -136,7 +151,7 @@ R3 要求：dense + sparse 混合；payload 过滤 user/agent；删除文档时�
 
 ## 5. 迁移
 
-工具：Alembic。已有版本包括 users 创建、agents、provider、status、conversation_message、表名单数。
+工具：Alembic。已有版本包括 user、agent、prompt、conversation、conversation_message、run_span、表名单数。
 
 约定：模型改动必须有迁移；不在生产手改表。
 

@@ -33,6 +33,15 @@ def _agent():
     return SimpleNamespace(provider="mock", model_name="mock-model")
 
 
+def _span_sink():
+    spans: list[dict] = []
+
+    async def record(**payload):
+        spans.append(payload)
+
+    return spans, record
+
+
 async def _run(provider, user_message: str) -> AIMessage:
     return await run_graph(
         LLMGateway({"mock": provider}),
@@ -681,3 +690,141 @@ async def test_execute_stream_emits_interrupt_and_saves_user_only():
     assert email.sent == []
     assert saved["user"] == ["请发邮件给老板"]
     assert saved["pairs"] == []
+
+
+@pytest.mark.asyncio
+async def test_spans_calculator_is_call_model_then_tools_then_model():
+    spans, recorder = _span_sink()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        _tools(),
+        _agent(),
+        span_recorder=recorder,
+        conversation_id=1,
+    )
+    result = await graph.run(
+        [AIMessage(role="user", content="12*7+5 等于多少")]
+    )
+
+    assert result.status == "completed"
+    assert [span["node"] for span in spans] == [
+        "call_model",
+        "execute_tools",
+        "call_model",
+    ]
+    assert spans[0]["tool_name"] is None
+    assert spans[1]["tool_name"] == "calculator"
+    assert spans[2]["tool_name"] is None
+    assert all(span["status"] == "ok" for span in spans)
+    assert all(span["duration_ms"] >= 0 for span in spans)
+
+
+@pytest.mark.asyncio
+async def test_spans_plain_reply_is_single_call_model():
+    spans, recorder = _span_sink()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        _tools(),
+        _agent(),
+        span_recorder=recorder,
+    )
+    await graph.run([AIMessage(role="user", content="你好")])
+
+    assert [span["node"] for span in spans] == ["call_model"]
+    assert spans[0]["status"] == "ok"
+    assert spans[0]["tool_name"] is None
+
+
+@pytest.mark.asyncio
+async def test_spans_hitl_pause_then_resume():
+    spans, recorder = _span_sink()
+    saver = InMemorySaver()
+    tools, email = _hitl_tools()
+    graph = AgentGraph(
+        LLMGateway({"mock": MockLLMProvider()}),
+        tools,
+        _agent(),
+        checkpointer=saver,
+        span_recorder=recorder,
+        conversation_id=10,
+    )
+    paused = await graph.run(
+        [AIMessage(role="user", content="请发邮件给老板")],
+        thread_id="span-hitl",
+    )
+
+    assert paused.status == "interrupted"
+    assert email.sent == []
+    assert [span["node"] for span in spans] == ["call_model"]
+    assert spans[0]["status"] == "ok"
+
+    result = await graph.resume("span-hitl", _decisions(paused.pending, True))
+
+    assert result.status == "completed"
+    assert [span["node"] for span in spans] == [
+        "call_model",
+        "execute_tools",
+        "call_model",
+    ]
+    assert spans[1]["tool_name"] == "send_email"
+    assert all(span["status"] == "ok" for span in spans)
+
+
+@pytest.mark.asyncio
+async def test_spans_max_iterations_records_error():
+    spans, recorder = _span_sink()
+    graph = AgentGraph(
+        LLMGateway({"mock": AlwaysToolLLMProvider()}),
+        _tools(),
+        _agent(),
+        span_recorder=recorder,
+    )
+
+    with pytest.raises(AgentRuntimeException, match="max iterations"):
+        await graph.run([AIMessage(role="user", content="loop")])
+
+    assert spans[-1]["node"] == "call_model"
+    assert spans[-1]["status"] == "error"
+    assert "max iterations" in (spans[-1]["error"] or "")
+
+
+@pytest.mark.asyncio
+async def test_execute_persists_spans_through_service():
+    created: list = []
+
+    class FakeSpanService:
+        async def create_span(self, db, span_data):
+            created.append(span_data)
+
+    executor = AgentExecutor(
+        llm_gateway=LLMGateway({"mock": MockLLMProvider()}),
+        prompt_manager=None,
+        memory_manager=None,
+        tool_manager=_tools(),
+        span_service=FakeSpanService(),
+    )
+
+    async def fake_build(db, agent, conversation, user_message, variables):
+        return [AIMessage(role="user", content=user_message)]
+
+    async def fake_save(db, conversation_id, user_message, assistant_message):
+        return SimpleNamespace(created_at=None)
+
+    executor._build_messages = fake_build
+    executor.memory_manager = SimpleNamespace(create_message=fake_save)
+
+    result = await executor.execute(
+        db=object(),
+        agent=_agent(),
+        conversation=SimpleNamespace(id=3),
+        user_message="12*7+5 等于多少",
+    )
+
+    assert result.content == "计算结果是 89"
+    assert [item.node for item in created] == [
+        "call_model",
+        "execute_tools",
+        "call_model",
+    ]
+    assert all(item.conversation_id == 3 for item in created)
+    assert created[1].tool_name == "calculator"

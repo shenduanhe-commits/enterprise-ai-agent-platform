@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 版本 | V2.1 |
-| 替代 | `docs/03-development/Environment.md`、`DEVELOPMENT.md`、`EAAP_DOCKER-USE.md`、`EAAP_PNPM-UV-USE.md`、`EAAP_DATABASE_USE.md` 中的现行说明 |
+| 替代 | `docs/03-development/Environment.md`、`DEVELOPMENT.md`；学习笔记见 [01-PNPM-UV.md](../05-notes/01-PNPM-UV.md)、[02-Docker.md](../05-notes/02-Docker.md)、[03-Database.md](../05-notes/03-Database.md) |
 
 ---
 
@@ -59,7 +59,7 @@ pnpm --filter apps-web dev
 
 - API：http://localhost:8000 与 http://localhost:8000/docs
 - Web：http://localhost:5173
-- 本机演示账号（仅开发库）：`user@eaap.com` / `user`。登录字段是 email。R1 走一遍见 [JWT.md](JWT.md) 第 12 节。
+- 本机演示账号（仅开发库）：`user@eaap.com` / `user`。登录字段是 email。R1 走一遍见 [08-JWT.md](../05-notes/08-JWT.md) 第 12 节。
 - Postgres：`localhost:${POSTGRES_PORT}`
 - Redis：`localhost:${REDIS_PORT}`
 - Qdrant：http://localhost:6333

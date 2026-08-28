@@ -4,15 +4,18 @@ from app.ai.dependencies import AgentExecutorDep
 from app.core.dependencies import CurrentUser, DbSession
 from app.repositories.agent_repository import AgentRepository
 from app.repositories.conversation_repository import ConversationRepository
+from app.repositories.run_span_repository import RunSpanRepository
 from app.schemas.chat import ChatResponse
-from app.schemas.run import ResumeRequest, RunResponse
+from app.schemas.run import ResumeRequest, RunResponse, RunSpanResponse
 from app.services.agent_service import AgentService
 from app.services.conversation_service import ConversationService
+from app.services.run_span_service import RunSpanService
 
 router = APIRouter(prefix="/runs", tags=["Runs"])
 
 conversation_service = ConversationService(ConversationRepository())
 agent_service = AgentService(AgentRepository())
+span_service = RunSpanService(RunSpanRepository())
 
 
 @router.get("/{run_id}", response_model=RunResponse)
@@ -56,3 +59,13 @@ async def resume_run(
         conversation,
         [item.model_dump() for item in body.decisions],
     )
+
+
+@router.get("/{run_id}/spans", response_model=list[RunSpanResponse])
+async def list_run_spans(
+    run_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    await conversation_service.get_conversation(db, run_id, current_user.id)
+    return await span_service.list_spans(db, run_id)

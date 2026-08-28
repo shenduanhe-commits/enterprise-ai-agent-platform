@@ -48,12 +48,16 @@ RAG / Eval / Observability ~25%
 - Python async、Pydantic、现有分层（API → Service → Repository）。
 - LLM tool calling 协议：`tool_calls` / `tool` role / JSON Schema。
 - 密码必须服务端哈希（Argon2），为什么不能收 `password_hash`。
+- 工具链：[01-PNPM-UV.md](../05-notes/01-PNPM-UV.md)、[02-Docker.md](../05-notes/02-Docker.md)、[03-Database.md](../05-notes/03-Database.md)。
+- 一次请求怎么走：[04-Request_Handle.md](../05-notes/04-Request_Handle.md)。
+
+笔记按阶段编号，集中在 [05-notes/](../05-notes/)。
 
 ### R1 后端产品面
 
-- JWT access + refresh；依赖注入拿当前用户（见 [JWT.md](../03-development/JWT.md)）。
-- HTTPS 与抓包：路径在 TLS 内，SNI/IP 对旁路可见（见 [HTTPS.md](../03-development/HTTPS.md)）。
-- CORS / 预检只约束浏览器，不是 JWT 门禁（见 [CORS.md](../03-development/CORS.md)）。
+- JWT access + refresh；依赖注入拿当前用户（见 [08-JWT.md](../05-notes/08-JWT.md)）。
+- HTTPS 与抓包：路径在 TLS 内，SNI/IP 对旁路可见（见 [09-HTTPS.md](../05-notes/09-HTTPS.md)）。
+- CORS / 预检只约束浏览器，不是 JWT 门禁（见 [10-CORS.md](../05-notes/10-CORS.md)）。
 - FastAPI `StreamingResponse`、SSE 事件格式、客户端断开。
 - 统一错误体（见 [Request_Handle.md](../03-development/Request_Handle.md)）。
 
@@ -61,11 +65,14 @@ RAG / Eval / Observability ~25%
 
 ### R2 Runtime
 
-- LangGraph v1：`StateGraph`、条件边、Pydantic/TypedDict 状态。
-- Checkpointer（Postgres 或 Redis）与「对话 Memory」的区别。
-- `interrupt` / resume；企业为什么默认要 HITL。
-- Structured output。
-- **不要**学已弃用的 `AgentExecutor` / `create_react_agent`。
+学习笔记：[11-R2_Langgraph_Runtime.md](../05-notes/11-R2_Langgraph_Runtime.md)。一次执行逐步数据：[12-R2_Langgraph_Runtime_Flow.md](../05-notes/12-R2_Langgraph_Runtime_Flow.md)。Checkpoint 快照字段：[13-R2_Langgraph_Snapshot.md](../05-notes/13-R2_Langgraph_Snapshot.md)。
+
+- LangGraph v1：手写 `StateGraph`（`call_model` / `execute_tools`），条件边，TypedDict 状态。
+- Checkpointer（Postgres，失败则内存）与对话 Memory、`run_span` 的区别。
+- `interrupt` / resume：节点会重跑；resume 列表按下标对齐。
+- 节点轨迹：表 + `GET /runs/{id}/spans`。Langfuse 留 R6。
+- Chat 不启用 Structured output；最终答案只在 `content`。
+- **不要**学已弃用的 LangChain `AgentExecutor` / `create_react_agent`（本仓库自己的 `ai.runtime.agent_executor.AgentExecutor` 是接线层，要看）。
 
 对照：把自研 loop 和 Graph 画在一张纸上，能指出每一步对应关系。
 

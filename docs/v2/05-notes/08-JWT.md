@@ -233,7 +233,7 @@ Cookie 只带给种下它的那台主机（还要匹配 Path）。XSS 不能 `fe
 
 XSS 仍能害你，是因为脚本跑在**你的页面**里，可以 `fetch` **正确的 FastAPI**（Cookie 会带上），再把返回的 JSON（对话、新 access）发到外部。挡的是「把长期票字符串拷到另一台机器」，不是「本页内不能冒充你调接口」。正道是输出转义 / CSP。
 
-传输见 [HTTPS.md](HTTPS.md)。跨源、预检、curl 见 [CORS.md](CORS.md)。
+传输见 [09-HTTPS.md](09-HTTPS.md)。跨源、预检、curl 见 [10-CORS.md](10-CORS.md)。
 
 ---
 
@@ -270,8 +270,8 @@ Access 过期后（正在聊天也一样）：
 4. 身份从 JWT 来，创建 Agent 时 `created_by` 取 `current_user.id`。
 5. 本实现 refresh 也是 JWT，服务端不存会话。无法主动作废某一枚（除非改 `JWT_SECRET` 或以后加黑名单）。R1 够用，生产常会把 refresh 存 Redis 以便登出。
 6. 两枚都放 localStorage 时，能偷 access 往往也能偷 refresh。Cookie 只带给种它的主机，XSS 不能把 Cookie 寄到任意网站，但仍可在本页 `fetch` 你家接口。
-7. HTTPS 加密的是 TLS 里的 HTTP（路径、Header、Body）；IP 和通常还有 SNI 主机名对旁路可见。见 [HTTPS.md](HTTPS.md)。
-8. CORS / 预检只约束浏览器里的网页 JS，不是 FastAPI 的登录门禁。见 [CORS.md](CORS.md)。
+7. HTTPS 加密的是 TLS 里的 HTTP（路径、Header、Body）；IP 和通常还有 SNI 主机名对旁路可见。见 [09-HTTPS.md](09-HTTPS.md)。
+8. CORS / 预检只约束浏览器里的网页 JS，不是 FastAPI 的登录门禁。见 [10-CORS.md](10-CORS.md)。
 9. 不把唯一一枚长期 access 放进 Cookie，是为了少 CSRF、方便 Swagger/curl；要短票 + 少露面的长票，仍然是两枚。
 
 ---

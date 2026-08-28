@@ -404,7 +404,7 @@ Windows PowerShell:
 
 当前终端已经进入项目 Python 虚拟环境。
 
-事实上，并不需要执行.venv\Scripts\activate，因为 uv run 会自动使用虚拟环境。详情可查看EAAP_PNPM-UV-USE.md
+事实上，并不需要执行.venv\Scripts\activate，因为 uv run 会自动使用虚拟环境。详情可查看 [01-PNPM-UV.md](01-PNPM-UV.md)
 
 ## 6.5 Install FastAPI Dependencies
 

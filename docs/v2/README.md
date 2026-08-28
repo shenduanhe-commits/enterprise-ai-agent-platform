@@ -40,9 +40,13 @@ V1 可以对照历史，但执行、学习、面试准备都以 V2 为准。两�
 | 用什么技术、不用什么 | [02-architecture/Technology_Stack.md](02-architecture/Technology_Stack.md) |
 | 表和向量库 | [02-architecture/Database.md](02-architecture/Database.md) |
 | HTTP / SSE 接口 | [02-architecture/AI_API.md](02-architecture/AI_API.md) |
-| JWT 怎么签发、refresh 怎么用 | [03-development/JWT.md](03-development/JWT.md) |
-| HTTPS 加密了什么、抓包能看见什么 | [03-development/HTTPS.md](03-development/HTTPS.md) |
-| CORS / 预检为什么拦不住 curl | [03-development/CORS.md](03-development/CORS.md) |
+| 学习笔记（按阶段编号） | [05-notes/](05-notes/) |
+| JWT 怎么签发、refresh 怎么用 | [05-notes/08-JWT.md](05-notes/08-JWT.md) |
+| HTTPS 加密了什么、抓包能看见什么 | [05-notes/09-HTTPS.md](05-notes/09-HTTPS.md) |
+| CORS / 预检为什么拦不住 curl | [05-notes/10-CORS.md](05-notes/10-CORS.md) |
+| R2 图 Runtime 怎么学 | [05-notes/11-R2_Langgraph_Runtime.md](05-notes/11-R2_Langgraph_Runtime.md) |
+| R2 一次执行的数据变化 | [05-notes/12-R2_Langgraph_Runtime_Flow.md](05-notes/12-R2_Langgraph_Runtime_Flow.md) |
+| R2 StateSnapshot 是什么 | [05-notes/13-R2_Langgraph_Snapshot.md](05-notes/13-R2_Langgraph_Snapshot.md) |
 | 如何把环境跑起来 | [03-development/Environment.md](03-development/Environment.md) |
 | 代码与测试约定 | [03-development/CodingStyle.md](03-development/CodingStyle.md)、[TestingStrategy.md](03-development/TestingStrategy.md) |
 | 安全 / 可观测 / 部署 | [04-operations/](04-operations/) |
@@ -74,15 +78,27 @@ docs/v2/
 │   ├── TestingStrategy.md
 │   ├── GitWorkflow.md
 │   ├── Request_Handle.md
-│   ├── JWT.md                         R1：签发 / Bearer / refresh
-│   ├── HTTPS.md                       TLS、私钥、抓包与 URL
-│   ├── CORS.md                        预检、浏览器门、curl
 │   └── ADR/
-└── 04-operations/
-    ├── Deployment.md
-    ├── Security.md
-    ├── Observability.md
-    └── Cost_and_Governance.md
+├── 04-operations/
+│   ├── Deployment.md
+│   ├── Security.md
+│   ├── Observability.md
+│   └── Cost_and_Governance.md
+└── 05-notes/                          学习笔记（按阶段编号）
+    ├── README.md
+    ├── 01-PNPM-UV.md
+    ├── 02-Docker.md
+    ├── 03-Database.md
+    ├── 04-Request_Handle.md
+    ├── 05-Milestone_0.md
+    ├── 06-Milestone_1.md
+    ├── 07-Milestone_2.md
+    ├── 08-JWT.md
+    ├── 09-HTTPS.md
+    ├── 10-CORS.md
+    ├── 11-R2_Langgraph_Runtime.md
+    ├── 12-R2_Langgraph_Runtime_Flow.md
+    └── 13-R2_Langgraph_Snapshot.md
 ```
 
 ---
@@ -109,12 +125,12 @@ docs/v2/
 | `docs/02-architecture/*`、`docs/系统架构设计文档 V1.0.md`、`docs/Agent设计文档 V1.0.md` | `02-architecture/` |
 | `docs/数据库设计文档 V1.0.md` | `02-architecture/Database.md` |
 | `docs/AI接口设计文档 V1.0.md` | `02-architecture/AI_API.md` |
-| `DEVELOPMENT.md`、`EAAP_DOCKER-USE.md`、`EAAP_PNPM-UV-USE.md`、`EAAP_DATABASE_USE.md`、`Environment.md` | `03-development/Environment.md` |
+| `DEVELOPMENT.md`、`EAAP_DOCKER-USE.md`、`EAAP_PNPM-UV-USE.md`、`EAAP_DATABASE_USE.md`、`Environment.md` | 现行说明：`03-development/Environment.md`；学习笔记：`05-notes/01`–`03` |
 | `CodingStyle.md` / `TestingStrategy.md` / `GitWorkflow.md` | `03-development/` 同名 |
-| `EAAP_Request_Handle.md` | `03-development/Request_Handle.md` |
+| `EAAP_Request_Handle.md` | 约定：`03-development/Request_Handle.md`；学习笔记：`05-notes/04-Request_Handle.md` |
 | `docs/03-development/ADR/*` | `03-development/ADR/`（重新编号） |
 | `docs/04-deployment/*` | `04-operations/` |
-| Milestone Completed Steps | 已消化进 `STATUS.md`，不另写一份 |
+| Milestone Completed Steps | 学习实录：`05-notes/05`–`07`；进度以 `STATUS.md` 为准 |
 
 ---
 

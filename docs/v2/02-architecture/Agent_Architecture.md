@@ -60,8 +60,8 @@ V1 一上来画 Supervisor 多 Agent。V2 承认：**先把单 Agent 做成可�
 
 | 组件 | 现状 | 目标 |
 | --- | --- | --- |
-| `AgentExecutor` | for-loop，最多 5 轮 | 对照实现，保留 |
-| LangGraph `StateGraph` | 无 | R2 生产路径 |
+| `AgentExecutor` | 非流式/SSE 走 `StateGraph`；loop 留下对照 | 对照保留 |
+| LangGraph `StateGraph` | 手写 `call_model` / `execute_tools`；最多 5 轮 | R2 生产路径（已落地） |
 | `LLMGateway` | chat + tool_calls；`response_format` 预留 | 图侧按需传入；真流式仍缺 |
 | `PromptManager` | 最新 prompt 或 system_prompt | 保留；变量渲染已有 |
 | `MemoryManager` | 最近 10 条 | 与 checkpoint 分工：Memory=对话，Checkpoint=图状态 |
@@ -70,7 +70,9 @@ V1 一上来画 Supervisor 多 Agent。V2 承认：**先把单 Agent 做成可�
 
 ---
 
-## 4. 当前执行循环（已落地）
+## 4. 当前执行循环（对照 loop，非生产）
+
+生产 Chat 走 `StateGraph`。`run_loop` / `stream_loop` 仅对照：
 
 ```
 messages = [system, *recent, user]
@@ -82,31 +84,17 @@ for i in 1..5:
 raise AgentRuntimeException
 ```
 
-缺口：OpenAI 丢 tool_calls；tool schema 为空；无流式；无持久图状态。
+## 5. 已落地执行图（R2）
 
-这套 loop 必须能向面试官讲清，再升级到图。
+状态：`messages`、`iteration`。节点：`START → call_model ⇄ execute_tools → END`。
 
----
+Checkpointer：优先 Postgres，失败则 `InMemorySaver`。`thread_id = conversation_id`。
 
-## 5. 目标执行图（R2）
+HITL：`send_email` 在 `execute_tools` 里 `interrupt()`；`POST /api/v1/runs/{id}/resume`。不单独拆 `wait_human` 节点。
 
-状态建议：
+轨迹：节点进出写 `run_span`；`GET /api/v1/runs/{id}/spans`。
 
-```text
-messages: list[AIMessage]
-iteration: int
-pending_tool_calls: list | None
-hitl: { pending: [{ id, name, arguments }], decisions: [{ id, approved }] } | None
-error: str | None
-```
-
-节点：`build_prompt` → `call_model` →（条件）`execute_tools` / `wait_human` / `finalize`。
-
-Checkpointer：Postgres 或 Redis。杀进程后用 thread_id（建议=conversation_id）恢复。
-
-HITL：危险工具进 `wait_human`，暴露 `POST /.../resume`。
-
-只用 `langchain.agents.create_agent` 当薄封装；复杂边必须手写 StateGraph。禁用已弃用 prebuilt。
+Chat 最终答案只在 `content`。不在对话路径启用 Structured output。禁用 `create_react_agent`。
 
 ---
 
@@ -138,7 +126,7 @@ R4 后 Runtime 只认「描述 + 调用」，不关心工具在进程内还是 M
 | 种类 | 实现 | 阶段 |
 | --- | --- | --- |
 | 短期 | `conversation_message` 最近 N 条 | 已有 |
-| 执行状态 | LangGraph checkpoint | R2 |
+| 执行状态 | LangGraph checkpoint | 已落地 |
 | 长期企业知识 | Qdrant + 文档表 | R3 |
 | 用户长期偏好 | 不做，除非有明确场景 | 选修 |
 

@@ -19,8 +19,8 @@
 
 | 阶段 | 做法 |
 | --- | --- |
-| 现在 | 应用日志；缺结构化 trace |
-| R2 | 每个 node 的输入输出与耗时（表或先写日志）；run_id 关联 conversation |
+| 现在 | `run_span` 表 + `GET /api/v1/runs/{id}/spans`（节点名、耗时、工具名、ok/error）；不落完整 prompt / token |
+| R2 | （上表已落地）run_id = conversation_id |
 | R3 | 检索 query、命中 chunk、rerank 分数写入同一 run |
 | R6 | Langfuse（或等价）+ OpenTelemetry；指标：延迟、token、工具失败率 |
 

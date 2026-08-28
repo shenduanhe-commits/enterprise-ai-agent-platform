@@ -1,5 +1,7 @@
 from collections.abc import AsyncIterator
+from datetime import datetime
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.llm.gateway import LLMGateway
@@ -11,11 +13,13 @@ from app.ai.tools.manager import ToolManager
 from app.ai.tools.parser import parse_tool_call_arguments
 from app.ai.type import AIMessage
 from app.core.exceptions import AgentRuntimeException
-from langgraph.checkpoint.base import BaseCheckpointSaver
+from app.repositories.run_span_repository import RunSpanRepository
 from app.schemas import AgentResponse
 from app.schemas.chat import ChatResponse
 from app.schemas.conversation import ConversationResponse
 from app.schemas.conversation_message import ConversationMessageResponse
+from app.schemas.run import RunSpanCreate
+from app.services.run_span_service import RunSpanService
 
 
 class AgentExecutor:
@@ -26,6 +30,7 @@ class AgentExecutor:
         memory_manager: MemoryManager,
         tool_manager: ToolManager,
         checkpointer: BaseCheckpointSaver | None = None,
+        span_service: RunSpanService | None = None,
     ):
 
         self.llm_gateway = llm_gateway
@@ -33,14 +38,51 @@ class AgentExecutor:
         self.memory_manager = memory_manager
         self.tool_manager = tool_manager
         self.checkpointer = checkpointer
+        self.span_service = span_service or RunSpanService(RunSpanRepository())
 
-    def _graph(self, agent: AgentResponse) -> AgentGraph:
+    def _graph(
+        self,
+        agent: AgentResponse,
+        *,
+        db: AsyncSession | None = None,
+        conversation_id: int | None = None,
+    ) -> AgentGraph:
+        recorder = None
+        if db is not None and conversation_id is not None:
+            recorder = self._span_recorder(db, conversation_id)
         return AgentGraph(
             self.llm_gateway,
             self.tool_manager,
             agent,
             checkpointer=self.checkpointer,
+            span_recorder=recorder,
+            conversation_id=conversation_id,
         )
+
+    def _span_recorder(self, db: AsyncSession, conversation_id: int):
+        async def record(
+            *,
+            node: str,
+            started_at: datetime,
+            duration_ms: int,
+            tool_name: str | None,
+            status: str,
+            error: str | None,
+        ) -> None:
+            await self.span_service.create_span(
+                db,
+                RunSpanCreate(
+                    conversation_id=conversation_id,
+                    node=node,
+                    started_at=started_at,
+                    duration_ms=duration_ms,
+                    tool_name=tool_name,
+                    status=status,
+                    error=error,
+                ),
+            )
+
+        return record
 
     # 非流式 /chat 走这里
     async def execute(
@@ -56,7 +98,9 @@ class AgentExecutor:
             db, agent, conversation, user_message, variables
         )
 
-        outcome = await self._graph(agent).run(
+        outcome = await self._graph(
+            agent, db=db, conversation_id=conversation.id
+        ).run(
             messages, thread_id=str(conversation.id)
         )
         if outcome.status == "interrupted":
@@ -97,7 +141,9 @@ class AgentExecutor:
 
         token_parts: list[str] = []
         interrupted: dict | None = None
-        async for event, data in self._graph(agent).stream(
+        async for event, data in self._graph(
+            agent, db=db, conversation_id=conversation.id
+        ).stream(
             messages, thread_id=str(conversation.id)
         ):
             if event == "token":
@@ -141,7 +187,9 @@ class AgentExecutor:
         conversation: ConversationResponse,
         decisions: list[dict],
     ) -> ChatResponse:
-        outcome = await self._graph(agent).resume(str(conversation.id), decisions)
+        outcome = await self._graph(
+            agent, db=db, conversation_id=conversation.id
+        ).resume(str(conversation.id), decisions)
         if outcome.status == "interrupted":
             return self._chat_response(
                 conversation.id,

@@ -3,14 +3,14 @@
 | 项目 | 内容 |
 | --- | --- |
 | 版本 | V2.1 |
-| 更新日期 | 2026-08-27 |
+| 更新日期 | 2026-08-28 |
 | 替代 | 根目录 `EAAP_STATUS.md`、`PROJECT_CHANGELOG.md`（V1，已过期） |
 
 ---
 
 ## 1. 一句话
 
-后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 与手写 LangGraph 已接通，危险工具可 HITL 暂停。最终回复在 `content`。**R2 进行中**（Structured output 未在 Chat 启用；节点轨迹 / Langfuse 未做）。前端演示壳仍未接。
+后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 与手写 LangGraph、checkpoint、HITL、节点轨迹已接通。最终回复在 `content`。**R2 后端完成**（Chat 不启用 Structured output；批准 UI 与 Langfuse 不做）。前端演示壳仍未接。
 
 ---
 
@@ -19,7 +19,7 @@
 ```
 R0  基线修复          ████████████  完成
 R1  认证 + 流式 API   ██████████░░  后端验收完成；前端演示壳选修
-R2  LangGraph Runtime ████████░░░░  图 + checkpoint + HITL；缺结构化输出 / 轨迹
+R2  LangGraph Runtime ████████████  后端完成；前端批准按钮选修
 R3  企业 RAG          ░░░░░░░░░░░░  未开始
 R4  MCP               ░░░░░░░░░░░░  未开始
 R5  Multi-Agent / A2A ░░░░░░░░░░░░  未开始
@@ -48,7 +48,8 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 | Chat | `POST /api/v1/agents/{id}/chat`（非流式，可 interrupted）、`/chat/stream`（SSE） |
 | 会话 | `GET /api/v1/conversations`、`GET /api/v1/conversations/{id}/messages` |
 | HITL | `GET /api/v1/runs/{id}`、`POST /api/v1/runs/{id}/resume`（run_id = conversation_id） |
-| 模型 | `user`、`agent`、`prompt`、`conversation`、`conversation_message` |
+| 节点轨迹 | `GET /api/v1/runs/{id}/spans`（JWT，仅会话主人） |
+| 模型 | `user`、`agent`、`prompt`、`conversation`、`conversation_message`、`run_span` |
 
 ### AI
 
@@ -56,7 +57,8 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 - `AgentExecutor`：非流式/SSE 走 `StateGraph`；loop 留下对照。
 - LangGraph：手写图；Postgres checkpointer（连不上则内存）；`thread_id = conversation_id`。
 - HITL：`send_email` 需批准；每个 tool call 单独勾选，一次 `/runs/{id}/resume` 提交 `decisions`。
-- Gateway 预留 `response_format`（OpenAI/Qwen 可转发）；Chat 图未传。最终若是 `{ "answer" }` JSON 则拆进 `content`，真实模型多为散文原样。不算 Structured output 已落地。
+- 节点轨迹：`call_model` / `execute_tools` 进出写 `run_span`（耗时、工具名、ok/error）；不存完整 prompt。HITL 暂停时只留下已跑完的节点。落库失败打日志，不打断 Chat。Langfuse 仍留 R6。
+- Gateway 预留 `response_format`（OpenAI/Qwen 可转发）；Chat 图未传。最终若是 `{ "answer" }` JSON 则拆进 `content`。对话路径明确不启用 Structured output。
 - Qwen、OpenAI 解析 OpenAI 形态 `tool_calls`；Anthropic 走 `messages.create` + `tool_use`。
 - `PromptManager`：优先最新 Prompt 模板，否则 Agent `system_prompt`。
 - `MemoryManager`：最近 10 条消息。
@@ -68,7 +70,7 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 
 ### 测试
 
-- pytest：含 `test_agent_graph.py`（图 / checkpoint / HITL）、`test_structured.py`。
+- pytest：含 `test_agent_graph.py`（图 / checkpoint / HITL / spans）、`test_structured.py`。
 - 连库手写脚本已用 `if __name__ == "__main__"` 保护。
 
 ---
@@ -79,18 +81,13 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 2. SSE `token` 是整段回答切块，不是模型真流式。
 3. 会话 `update` / `delete` 尚未挂路由，Service 层也不带 `user_id`。
 4. 前端未接登录 / Agent / Chat。
-5. R2 剩余：Chat 启用 Structured output（需额外一轮或独立抽取接口）、节点轨迹 / Langfuse。
+5. Chat Structured output、前端批准按钮：R2 明确不做。Langfuse 属 R6。
 
 ---
 
 ## 5. 下一步
 
-R2 已有图、checkpoint、HITL。Structured output 未在对话路径启用。**不要开 RAG**，除非明确开始 R3。
-
-下一步可选：
-
-1. 节点可查（表或 Langfuse）。
-2. 前端一个「批准」按钮，或继续 Swagger。
+**R2 后端已验收。** 下一步是 **R3 企业 RAG**，除非明确说做前端。
 
 本机演示账号：`user@eaap.com` / `user`（仅开发库）。
 
@@ -100,6 +97,8 @@ R2 已有图、checkpoint、HITL。Structured output 未在对话路径启用。
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-28 | R2 后端验收：图 / checkpoint / HITL / spans；Structured output 与前端批准不做 |
+| 2026-08-27 | R2：run_span 表 + `GET /runs/{id}/spans`；图节点进出落库（Langfuse 仍留 R6） |
 | 2026-08-27 | R2：Gateway 预留 response_format；JSON 最终答案可拆进 content（Chat 未启用结构化输出） |
 | 2026-08-26 | R2：StateGraph + checkpoint + HITL（send_email / resume） |
 | 2026-08-18 | R0 闭环 + R1 后端：JWT access/refresh、SSE、会话历史；OpenAI/Anthropic tool 解析对齐 |
