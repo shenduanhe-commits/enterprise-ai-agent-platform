@@ -3,6 +3,9 @@ from typing import Annotated
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.knowledge.reranker import get_reranker
+from app.ai.knowledge.retriever import KnowledgeRetriever
+from app.ai.knowledge.store import get_chunk_store
 from app.ai.llm.gateway import (
     LLMGateway,
 )
@@ -114,6 +117,10 @@ def get_checkpointer(request: Request) -> BaseCheckpointSaver | None:
 CheckpointerDep = Annotated[BaseCheckpointSaver | None, Depends(get_checkpointer)]
 
 
+def _knowledge_retriever() -> KnowledgeRetriever:
+    return KnowledgeRetriever(store=get_chunk_store(), reranker=get_reranker())
+
+
 async def get_agent_executor(
     llm_gateway: LLMGatewayDep,
     prompt_manager: PromptManagerDep,
@@ -128,6 +135,7 @@ async def get_agent_executor(
         memory_manager=memory_manager,
         tool_manager=tool_manager,
         checkpointer=checkpointer,
+        knowledge_retriever=_knowledge_retriever(),
     )
 
 

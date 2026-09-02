@@ -65,7 +65,7 @@ START → call_model ─┬─ 无 tool_calls → END
 | `call_model` | `LLMGateway.chat`（始终带 tools）。无工具则把最终文本写入 `content`，SSE 按 8 字切块。 |
 | `execute_tools` | 跑工具。`send_email` 先 `interrupt()`，批准前不执行。 |
 
-第一轮把 Memory 拼好的 messages（含 system）整段喂进去。同一 `thread_id` 再聊时，若 checkpoint 里已有 `messages`，**只追加本轮 user**，避免和 Memory 拼重复。新一轮 Chat 走 `_input_for_turn`，input 会把 `iteration` 写成 `0`（无 reducer，会覆盖），所以上限 5 是**这一次 Chat 的 ainvoke 里**最多进 5 次 `call_model`，不是整个会话累计。`resume` 走 `Command(resume=...)`，**不会**再走 `_input_for_turn`，`iteration` 从 checkpoint 接着加。
+第一轮把 Memory 拼好的 messages（含 system）整段喂进去。同一 `thread_id` 再聊时，若 checkpoint 里已有 `messages`，只追加本轮新增消息（通常是 user；有检索命中则是知识库 system + user），避免和 Memory 拼重复。新一轮 Chat 走 `_input_for_turn`，input 会把 `iteration` 写成 `0`（无 reducer，会覆盖），所以上限 5 是**这一次 Chat 的 ainvoke 里**最多进 5 次 `call_model`，不是整个会话累计。`resume` 走 `Command(resume=...)`，**不会**再走 `_input_for_turn`，`iteration` 从 checkpoint 接着加。
 
 对照：`AgentExecutor.run_loop` / `stream_loop` 仍是 `for i in 1..5`，Chat **不再调用**。面试时能指出每一步和图节点的对应即可。
 

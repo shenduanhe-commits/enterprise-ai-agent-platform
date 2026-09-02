@@ -1,0 +1,1 @@
+# 报告由 `uv run python -m app.ai.knowledge.eval --write-report` 生成

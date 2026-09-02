@@ -4,6 +4,7 @@
 | --- | --- |
 | 版本 | V2.1 |
 | 替代 | 学习笔记 [04-Request_Handle.md](../05-notes/04-Request_Handle.md) |
+| 补充 | Content-Type / Response / Exception：[14-R1_FastAPI_ContentType_Response.md](../05-notes/14-R1_FastAPI_ContentType_Response.md) |
 
 ---
 

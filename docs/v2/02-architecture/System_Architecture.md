@@ -49,21 +49,20 @@ V1 的 Workflow Application 不作为独立层，复杂流程用 LangGraph 表�
 enterprise-ai-agent-platform
 ├── apps
 │   ├── api/app
-│   │   ├── api/v1/            # users, agents, health；（目标）auth, knowledge
+│   │   ├── api/v1/            # auth, users, agents, knowledge, runs
 │   │   ├── services/
 │   │   ├── repositories/
 │   │   ├── models/
 │   │   ├── schemas/
 │   │   ├── handlers/
-│   │   ├── core/              # config, database, exceptions, security(R1)
+│   │   ├── core/              # config, database, exceptions, security
 │   │   └── ai/
 │   │       ├── llm/           # Gateway + providers
-│   │       ├── runtime/       # agent_executor.py；graph/(R2)
+│   │       ├── runtime/       # agent_executor.py + StateGraph
 │   │       ├── tools/         # 已有；MCP adapter(R4)
 │   │       ├── memory/
 │   │       ├── prompts/
-│   │       ├── rag/           # R3
-│   │       └── eval/          # R3/R6
+│   │       └── knowledge/     # 解析 / 切块 / 检索 / rerank / eval
 │   └── web/                   # 演示壳
 ├── docker-compose.yml
 └── docs/v2/                   # 现行文档
@@ -113,7 +112,7 @@ Router → Service → Repository → SQLAlchemy
 | --- | --- | --- |
 | PostgreSQL 16 | 用户、Agent、会话、审计、checkpoint | 已部署；业务表部分已有 |
 | Redis 7 | 缓存、限流（目标）、可选 checkpoint | 已部署，业务未用 |
-| Qdrant | 向量 + 稀疏检索 | 已部署，业务未用 |
+| Qdrant | 向量 + 稀疏检索 | 已部署；上传/检索/按文档删除 `eaap_chunks` |
 | Docker Compose | 本地依赖 | 已有 |
 
 对象存储 V1 规划了，V2 的 R3 先用本地磁盘或 Postgres 存文件元数据，不先上 MinIO。
@@ -125,12 +124,11 @@ Router → Service → Repository → SQLAlchemy
 ```
 POST /api/v1/agents/{id}/chat
   → 鉴权、加载 Agent 与 Conversation
-  → Runtime.execute (R2 起为 StateGraph)
-       → PromptManager.build
-       → Memory.get_recent
+  → AgentExecutor 拼 messages（含 KnowledgeRetriever）
+  → Runtime.execute（StateGraph）
        → LLMGateway.chat / stream（可含 tools）
        → ToolManager 或 MCP
-       →（可选）RAG retrieve
+       → interrupt HITL
        → 写回 messages + trace
   → SSE 或 JSON
 ```
@@ -141,10 +139,10 @@ POST /api/v1/agents/{id}/chat
 
 | 阶段 | 架构变化 |
 | --- | --- |
-| 现在 | 单体 + 自研 loop + 无鉴权 |
+| 现在 | 单体 + JWT + StateGraph + 知识库（Qdrant hybrid） |
 | R1 | 同一单体 + Auth 依赖 |
 | R2 | 同一单体 + Graph Runtime + checkpointer |
-| R3 | 同一单体 + rag 包 + Qdrant 真正使用 |
+| R3 | 同一单体 + `ai/knowledge` + Qdrant 真正使用 |
 | R4 | 同一单体 + 侧车或同机构 MCP Server |
 | R5 | 仍单体；A2A 可另起一个进程证明协议 |
 | R6 | 加 telemetry sidecar（Langfuse），不拆业务服务 |

@@ -44,9 +44,10 @@ R2 增加：同一用例 Graph vs legacy 工具序列一致；HITL 未 resume �
 
 ## 4. RAG Eval（R3）
 
-- 20–50 条 `{ question, expected_doc_ids, notes }`。
-- 指标：recall@k、citation precision、幻觉（答了但引用不支持）。
-- 报告写入 `docs/v2` 或 `apps/api/evals/reports/`，不要只存在本地终端。
+- 20+ 条 `{ question, expected_doc_ids, notes }`，见 `apps/api/evals/gold/retrieval.json`。
+- 指标：recall@k、citation precision；空期望却检出记为检索幻觉。答案级幻觉留 LLM-as-judge。
+- 报告：`apps/api/evals/reports/retrieval.md`（`uv run python -m app.ai.knowledge.eval --write-report`）。
+- pytest：`uv run pytest tests/test_knowledge_eval.py -q`。
 
 ---
 

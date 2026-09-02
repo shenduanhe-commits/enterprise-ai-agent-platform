@@ -59,6 +59,7 @@ RAG / Eval / Observability ~25%
 - HTTPS 与抓包：路径在 TLS 内，SNI/IP 对旁路可见（见 [09-HTTPS.md](../05-notes/09-HTTPS.md)）。
 - CORS / 预检只约束浏览器，不是 JWT 门禁（见 [10-CORS.md](../05-notes/10-CORS.md)）。
 - FastAPI `StreamingResponse`、SSE 事件格式、客户端断开。
+- 请求 `Content-Type`、Response 种类、异常如何变成 JSON（见 [14-R1_FastAPI_ContentType_Response.md](../05-notes/14-R1_FastAPI_ContentType_Response.md)）。
 - 统一错误体（见 [Request_Handle.md](../03-development/Request_Handle.md)）。
 
 前端：用已有 Vue 能力接 3 个薄页面，不学新框架。
@@ -79,9 +80,9 @@ RAG / Eval / Observability ~25%
 ### R3 RAG
 
 - 解析 → chunk → embedding → upsert。
-- Qdrant 混合检索 + rerank。
+- Qdrant 混合检索 + rerank（特征或 cross-encoder）。
 - 上下文 token 预算；citation。
-- 离线黄金集：recall@k、引用正确率、幻觉。
+- 离线黄金集：recall@k、引用正确率、检索幻觉。
 - RAG 失败 vs 模型编造，如何用 eval 分开。
 
 ### R4 MCP

@@ -7,7 +7,7 @@
 
 按「先能把仓库跑起来，再做业务，再做认证与 Runtime」编号。工程约定（环境、风格、测试、Git、ADR）仍在 [03-development/](../03-development/)。
 
-后续 R3–R6 从 `14-` 接着编号。
+后续阶段从 `16-` 接着编号。只在明确要求时新增笔记。
 
 | 序号 | 阶段 | 文档 |
 | --- | --- | --- |
@@ -24,3 +24,5 @@
 | 11 | R2 | [LangGraph Runtime 概念与问答](11-R2_Langgraph_Runtime.md) |
 | 12 | R2 | [一次执行的数据变化](12-R2_Langgraph_Runtime_Flow.md) |
 | 13 | R2 | [StateSnapshot 字段](13-R2_Langgraph_Snapshot.md) |
+| 14 | R1 | [Content-Type / Response / Exception](14-R1_FastAPI_ContentType_Response.md) |
+| 15 | R3 | [向量检索全流程（dense / sparse / RRF / rerank）](15-R3_Vector_Retrieve.md) |

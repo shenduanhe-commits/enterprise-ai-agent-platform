@@ -13,6 +13,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 from typing_extensions import TypedDict
 
+from app.ai.knowledge.retriever import KNOWLEDGE_PREFIX
 from app.ai.llm.gateway import LLMGateway
 from app.ai.structured import parse_final_answer
 from app.ai.tools.manager import ToolManager
@@ -32,6 +33,17 @@ def iter_token_chunks(text: str, size: int = _TOKEN_CHUNK_SIZE) -> list[str]:
     if not text:
         return []
     return [text[i : i + size] for i in range(0, len(text), size)]
+
+
+def _new_turn_messages(messages: list[AIMessage]) -> list[AIMessage]:
+    if (
+        len(messages) >= 2
+        and messages[-1].role == "user"
+        and messages[-2].role == "system"
+        and (messages[-2].content or "").startswith(KNOWLEDGE_PREFIX)
+    ):
+        return messages[-2:]
+    return messages[-1:]
 
 
 def _emit(payload: tuple) -> None:
@@ -102,8 +114,8 @@ class AgentGraph:
             return {"messages": messages, "iteration": 0}
         snapshot = await self._graph.aget_state(config)
         if snapshot.values and snapshot.values.get("messages"):
-            # checkpoint 里已有历史，只追加本轮 user，避免和 Memory 拼重复。
-            return {"messages": [messages[-1]], "iteration": 0}
+            # checkpoint 里已有历史，只追加本轮新增消息，避免和 Memory 拼重复。
+            return {"messages": _new_turn_messages(messages), "iteration": 0}
         return {"messages": messages, "iteration": 0}
 
     async def _reject_if_paused(self, config: dict | None) -> None:

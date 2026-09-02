@@ -42,6 +42,9 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 | GET | `/api/v1/runs/{run_id}` | 图是否暂停；`run_id` = conversation_id | Bearer |
 | GET | `/api/v1/runs/{run_id}/spans` | 节点轨迹（耗时 / 工具名 / ok·error）；仅会话主人 | Bearer |
 | POST | `/api/v1/runs/{run_id}/resume` | HITL：每个 tool call 单独勾选，一次提交 `decisions` | Bearer |
+| POST | `/api/v1/knowledge/documents` | multipart 上传 `.md` / `.pdf` / `.docx`；同步切块入库后返回 `ready` 或 `failed` | Bearer |
+| GET | `/api/v1/knowledge/documents` | 当前用户的文档；可选 `?agent_id=` | Bearer |
+| DELETE | `/api/v1/knowledge/documents/{id}` | 删自己的文档、磁盘文件和 Qdrant 点；别人的 id 当 404 | Bearer |
 
 ### 创建 Agent
 
@@ -78,11 +81,12 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
   "content": "89",
   "created_at": "2026-08-15T00:00:00Z",
   "status": "completed",
-  "pending": null
+  "pending": null,
+  "citations": []
 }
 ```
 
-`conversation_id` 为空则按 `user_message` 建会话。助手回复只在 `content`。检索引用等系统信息以后用单独字段（如 `citations`），不要再包一层和 `content` 重复的 `output`。
+`conversation_id` 为空则按 `user_message` 建会话。助手回复只在 `content`。知识库出处在 `citations`（`document_id` / `title` / `chunk_id`），没命中为 `[]`。不要再包一层和 `content` 重复的 `output`。
 
 SSE 示例：
 
@@ -91,7 +95,7 @@ event: token
 data: {"text":"你"}
 
 event: done
-data: {"conversation_id":10,"role":"assistant","content":"...","created_at":null,"status":"completed","pending":null}
+data: {"conversation_id":10,"role":"assistant","content":"...","created_at":null,"status":"completed","pending":null,"citations":[]}
 ```
 
 过程事件是 `token` / `tool` / `interrupt`。最后一帧 `done` 的 `data` 与非流式 `ChatResponse` 相同。危险工具会先推 `interrupt`，再 `done`（`status=interrupted`，带 `pending`），不会执行工具。
@@ -160,15 +164,7 @@ data: {"conversation_id":10,"role":"assistant","content":"...","created_at":null
 
 ## 3. 计划中的端点
 
-### R3
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/knowledge/documents` | multipart 上传 |
-| GET | `/knowledge/documents` | 列表与状态 |
-| DELETE | `/knowledge/documents/{id}` | 同步删向量 |
-
-Chat 响应增加 `citations: [{ document_id, title, chunk_id }]`。
+R3 知识库端点已落地（见第 2 节）。Chat 按 `user_id` + `agent_id` 做 dense + sparse RRF，准入后 rerank（cross-encoder 或特征回退），并返回 `citations`。
 
 ### R4
 

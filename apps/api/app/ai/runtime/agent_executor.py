@@ -1,9 +1,14 @@
+import logging
 from collections.abc import AsyncIterator
 from datetime import datetime
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.knowledge.retriever import (
+    KnowledgeRetriever,
+    format_knowledge_message,
+)
 from app.ai.llm.gateway import LLMGateway
 from app.ai.memory.manager import MemoryManager
 from app.ai.prompts.manager import PromptManager
@@ -15,11 +20,13 @@ from app.ai.type import AIMessage
 from app.core.exceptions import AgentRuntimeException
 from app.repositories.run_span_repository import RunSpanRepository
 from app.schemas import AgentResponse
-from app.schemas.chat import ChatResponse
+from app.schemas.chat import ChatResponse, Citation
 from app.schemas.conversation import ConversationResponse
 from app.schemas.conversation_message import ConversationMessageResponse
 from app.schemas.run import RunSpanCreate
 from app.services.run_span_service import RunSpanService
+
+logger = logging.getLogger(__name__)
 
 
 class AgentExecutor:
@@ -31,6 +38,7 @@ class AgentExecutor:
         tool_manager: ToolManager,
         checkpointer: BaseCheckpointSaver | None = None,
         span_service: RunSpanService | None = None,
+        knowledge_retriever: KnowledgeRetriever | None = None,
     ):
 
         self.llm_gateway = llm_gateway
@@ -39,6 +47,8 @@ class AgentExecutor:
         self.tool_manager = tool_manager
         self.checkpointer = checkpointer
         self.span_service = span_service or RunSpanService(RunSpanRepository())
+        self.knowledge_retriever = knowledge_retriever
+        self._citations: list[Citation] = []
 
     def _graph(
         self,
@@ -187,6 +197,7 @@ class AgentExecutor:
         conversation: ConversationResponse,
         decisions: list[dict],
     ) -> ChatResponse:
+        self._citations = []
         outcome = await self._graph(
             agent, db=db, conversation_id=conversation.id
         ).resume(str(conversation.id), decisions)
@@ -214,6 +225,7 @@ class AgentExecutor:
         status: str = "completed",
         pending: dict | None = None,
         created_at=None,
+        citations: list[Citation] | None = None,
     ) -> ChatResponse:
         return ChatResponse(
             conversation_id=conversation_id,
@@ -222,6 +234,7 @@ class AgentExecutor:
             created_at=created_at,
             status=status,
             pending=pending,
+            citations=citations if citations is not None else list(self._citations),
         )
 
     def _chat_payload(self, response: ChatResponse) -> dict:
@@ -241,6 +254,7 @@ class AgentExecutor:
         user_message: str,
         variables: dict | None,
     ) -> list[AIMessage]:
+        self._citations = []
         system_message = await self.prompt_manager.build(
             db, agent=agent, variables=variables
         )
@@ -249,11 +263,40 @@ class AgentExecutor:
             conversation_id=conversation.id,
             limit=10,
         )
-        return [
-            system_message,
-            *memory,
-            AIMessage(role="user", content=user_message),
+        hits = await self._retrieve_hits(user_message, conversation, agent)
+        self._citations = [
+            Citation(
+                document_id=hit.document_id,
+                title=hit.source,
+                chunk_id=hit.chunk_id,
+            )
+            for hit in hits
         ]
+        messages = [system_message, *memory]
+        if hits:
+            messages.append(
+                AIMessage(role="system", content=format_knowledge_message(hits))
+            )
+        messages.append(AIMessage(role="user", content=user_message))
+        return messages
+
+    async def _retrieve_hits(
+        self,
+        user_message: str,
+        conversation: ConversationResponse,
+        agent: AgentResponse,
+    ):
+        if self.knowledge_retriever is None:
+            return []
+        try:
+            return await self.knowledge_retriever.retrieve(
+                user_message,
+                user_id=conversation.user_id,
+                agent_id=agent.id,
+            )
+        except Exception:
+            logger.exception("knowledge retrieve failed")
+            return []
 
     # 非graph 非流式 /chat 走这里
     async def run_loop(

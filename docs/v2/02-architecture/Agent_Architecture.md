@@ -48,10 +48,12 @@ V1 一上来画 Supervisor 多 Agent。V2 承认：**先把单 Agent 做成可�
               PromptManager  +  Memory (recent N)
                          │
                          ▼
-              ┌── Runtime loop / graph ──┐
+              KnowledgeRetriever（拼 【知识库】，R3）
+                         │
+                         ▼
+              ┌── Runtime graph ──┐
               │  LLMGateway (+ tools)    │
               │  ToolManager / MCP       │
-              │  RAG retrieve (R3)       │
               │  interrupt HITL (R2)     │
               └──────────┬───────────────┘
                          ▼
@@ -65,8 +67,8 @@ V1 一上来画 Supervisor 多 Agent。V2 承认：**先把单 Agent 做成可�
 | `LLMGateway` | chat + tool_calls；`response_format` 预留 | 图侧按需传入；真流式仍缺 |
 | `PromptManager` | 最新 prompt 或 system_prompt | 保留；变量渲染已有 |
 | `MemoryManager` | 最近 10 条 | 与 checkpoint 分工：Memory=对话，Checkpoint=图状态 |
-| `ToolManager` | 内存注册 calculator | R4 注册表 + MCP |
-| RAG | 无 | R3 作为节点或工具 |
+| `ToolManager` | 内存注册 calculator、send_email | R4 注册表 + MCP |
+| RAG | Chat 拼 messages 时检索（非图节点）；hybrid + rerank + citations | 已落地 |
 
 ---
 
@@ -127,7 +129,7 @@ R4 后 Runtime 只认「描述 + 调用」，不关心工具在进程内还是 M
 | --- | --- | --- |
 | 短期 | `conversation_message` 最近 N 条 | 已有 |
 | 执行状态 | LangGraph checkpoint | 已落地 |
-| 长期企业知识 | Qdrant + 文档表 | R3 |
+| 长期企业知识 | Postgres `knowledge_document` + 磁盘原文 + Qdrant `eaap_chunks` | 已落地 |
 | 用户长期偏好 | 不做，除非有明确场景 | 选修 |
 
 不要用 LangChain 旧 Memory 类。
@@ -162,4 +164,4 @@ Supervisor ── Knowledge Agent
 
 ## 10. 评测
 
-R3 起：黄金问答（RAG）。R6：trajectory（工具序列是否合理）+ LLM-as-judge。评测是 Runtime 的一部分，不是上线后补丁。
+R3：黄金问答（RAG，`apps/api/evals/`）。R6：trajectory（工具序列是否合理）+ LLM-as-judge。评测是 Runtime 的一部分，不是上线后补丁。

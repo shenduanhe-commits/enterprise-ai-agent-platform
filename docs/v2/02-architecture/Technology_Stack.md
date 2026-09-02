@@ -32,7 +32,7 @@
 | 校验 | Pydantic v2 + pydantic-settings | 已有 |
 | 业务库 | PostgreSQL 16 | 已有 |
 | 缓存 | Redis 7 | 已部署，待用 |
-| 向量 | Qdrant（dense + sparse + rerank） | 已部署，待用 |
+| 向量 | Qdrant dense + sparse；特征 rerank 或 cross-encoder API | 混合检索 + rerank 已接 |
 | Agent 编排 | LangGraph v1 StateGraph + Checkpointer | R2 |
 | 简单工厂 | `langchain.agents.create_agent`（可选薄封装） | R2 |
 | LLM | Gateway：Qwen 兼容接口 / OpenAI Responses / Anthropic 官方 SDK | 部分已有 |

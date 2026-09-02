@@ -88,6 +88,21 @@ V1 的 username/department/status 未建。R1 不必补部门；R6 若做 RBAC �
 
 一次图节点执行。不存完整 prompt。`GET /api/v1/runs/{id}/spans`。HITL 暂停时往往只有已跑完的 `call_model`。
 
+### knowledge_document
+
+| 列 | 类型 | 说明 |
+| --- | --- | --- |
+| id | int PK | |
+| owner_user_id | FK user.id | JWT 用户，列表按此隔离 |
+| agent_id | FK agent.id | 必须是该用户的 Agent |
+| title | varchar(255) | 默认用文件名（不含扩展名） |
+| source_uri | varchar(500) | 相对 `apps/api/data/knowledge/` 的路径 |
+| status | varchar(20) | `pending` / `ready` / `failed`；插入为 `pending`，切块入库后为 `ready` 或 `failed` |
+| error | text null | 入库失败原因 |
+| created_at | timestamptz | |
+
+R3：上传 `.md` / `.pdf` / `.docx` 后同步切块并写入 Qdrant；接口返回最终 `ready` / `failed`。扫描件无文字会 `failed`。Chat 检索已接（见第 4 节）。
+
 ---
 
 ## 2. 计划中的表（未建）
@@ -105,15 +120,7 @@ V1 的 username/department/status 未建。R1 不必补部门；R6 若做 RBAC �
 
 ### R3
 
-**knowledge_document**
-
-- id、owner_user_id、title、source_uri、status（pending/ready/failed）、error、created_at
-
-**knowledge_chunk**（可选，元数据也在 Qdrant payload）
-
-- id、document_id、ordinal、text、token_count
-
-Qdrant collection 建议：`eaap_chunks`，向量 + payload：`document_id`、`user_id`、`agent_id`、`text`、`source`。
+**knowledge_document** 已落地（见上）。切块不进 Postgres；向量在 Qdrant `eaap_chunks`。
 
 ### R4
 
@@ -143,15 +150,17 @@ V1 的完整 permission / role / department / task 表不一次建齐。
 
 ## 4. Qdrant
 
-现状：健康检查通过，无业务 collection。
+Collection：`eaap_chunks`。named dense cosine（`dense`，维数 hash 64 或 `EMBEDDING_DIM`）+ named sparse（`sparse`，词面哈希 + IDF）。维数或 schema 对不上会重建 collection，启动时按磁盘原文件重新切块嵌入，不必让用户再传一遍。
 
-R3 要求：dense + sparse 混合；payload 过滤 user/agent；删除文档时同步删点。
+Payload：`document_id`、`user_id`、`agent_id`、`ordinal`、`text`、`source`。Point id = uuid5(`document_id:ordinal`)。
+
+Chat 检索：dense 与 sparse 各查一条，RRF 融合；filter 仍是 `user_id`/`agent_id`。准入后 rerank（配了 `RERANK_MODEL` / `RERANK_API_KEY` / `RERANK_BASE_URL` 则 cross-encoder，否则或调用失败则特征 rerank），取前 4 条，再按 `KNOWLEDGE_CONTEXT_TOKENS` 装入 Prompt。删除文档时按 `document_id` + `user_id` 删点。检索黄金集见 `apps/api/evals/`。
 
 ---
 
 ## 5. 迁移
 
-工具：Alembic。已有版本包括 user、agent、prompt、conversation、conversation_message、run_span、表名单数。
+工具：Alembic。已有版本包括 user、agent、prompt、conversation、conversation_message、run_span、knowledge_document、表名单数。
 
 约定：模型改动必须有迁移；不在生产手改表。
 

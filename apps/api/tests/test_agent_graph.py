@@ -168,6 +168,7 @@ async def test_execute_uses_graph_not_loop():
     )
 
     assert result.content == "计算结果是 89"
+    assert result.citations == []
     assert saved["content"] == "计算结果是 89"
 
 
@@ -252,6 +253,7 @@ async def test_execute_stream_uses_graph_not_loop():
     assert done["role"] == "assistant"
     assert done["status"] == "completed"
     assert done["pending"] is None
+    assert done["citations"] == []
     assert "Mock AI Response" in (done["content"] or "")
     assert "Mock AI Response" in saved["content"]
 

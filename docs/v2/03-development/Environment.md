@@ -40,7 +40,9 @@ enterprise-ai-agent-platform
 ```bash
 # 1. 环境变量
 cp .env.example .env
-# 按需填 QWEN_API_KEY / QWEN_BASE_URL 或 OPENAI_API_KEY
+# 按需填 QWEN_API_KEY / QWEN_BASE_URL 或 OPENAI_API_KEY（聊天）
+# 知识库向量另填 EMBEDDING_API_KEY / EMBEDDING_BASE_URL / EMBEDDING_MODEL
+# Cross-encoder rerank 另填 RERANK_API_KEY / RERANK_BASE_URL / RERANK_MODEL（不配则本地特征 rerank）
 
 # 2. 基础设施
 docker compose up -d
@@ -91,7 +93,7 @@ docker compose down
 
 ## 5. 环境变量（根 `.env`）
 
-已有：`POSTGRES_*`、`DATABASE_URL`、`REDIS_*`、`QDRANT_*`、`API_PORT`、`WEB_PORT`、`VITE_API_URL`、`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、以及代码中的 `QWEN_API_KEY` / `QWEN_BASE_URL`。
+已有：`POSTGRES_*`、`DATABASE_URL`、`REDIS_*`、`QDRANT_*`、`API_PORT`、`WEB_PORT`、`VITE_API_URL`、`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`QWEN_API_KEY` / `QWEN_BASE_URL`。知识库 embedding 单独配：`EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL`、`EMBEDDING_MODEL`、`EMBEDDING_DIM`、`EMBEDDING_BATCH`（默认 16）。知识摘录上限：`KNOWLEDGE_CONTEXT_TOKENS`（默认 1024）。Cross-encoder rerank 单独配：`RERANK_API_KEY`、`RERANK_BASE_URL`、`RERANK_MODEL`（三者都有才启用）。百炼 `qwen3.7-text-rerank` 的 URL 必须是 `.../api/v1/services/rerank/text-rerank/text-rerank`，不要抄 embedding 的 `compatible-mode/v1`。不配 embedding Key 或模型则本地 hash；不配 rerank 则本地特征 rerank。
 
 R1 将加：`JWT_SECRET`、`JWT_EXPIRE_MINUTES`。不要把真实 Key 提交进 Git。
 

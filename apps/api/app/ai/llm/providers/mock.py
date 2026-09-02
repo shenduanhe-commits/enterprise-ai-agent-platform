@@ -1,6 +1,7 @@
 import json
 import re
 
+from app.ai.knowledge.retriever import KNOWLEDGE_PREFIX
 from app.ai.llm.providers.base import BaseLLMProvider
 from app.ai.type import AIMessage
 
@@ -72,6 +73,17 @@ class MockLLMProvider(BaseLLMProvider):
             )
 
         # 普通闲聊：只回 JSON 最终答案，run_loop 看到没有 tool_calls 就会结束。
+        knowledge = next(
+            (
+                message.content
+                for message in messages
+                if message.role == "system"
+                and (message.content or "").startswith(KNOWLEDGE_PREFIX)
+            ),
+            None,
+        )
+        if knowledge:
+            return self._final(knowledge)
         return self._final(f"Mock AI Response: received '{last_message.content}'")
 
     def _final(self, answer: str) -> AIMessage:

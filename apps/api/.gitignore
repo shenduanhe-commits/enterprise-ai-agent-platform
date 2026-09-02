@@ -20,3 +20,8 @@ __pycache__/
 .coverage
 
 htmlcov/
+
+# Uploaded knowledge files (keep directory)
+data/knowledge/*
+!data/knowledge/.gitkeep
+

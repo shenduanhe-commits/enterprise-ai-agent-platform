@@ -1,5 +1,8 @@
 # 一次请求的执行过程
 
+请求用哪种 `Content-Type`、成功返回哪种 Response、异常如何变成 JSON：见 [14-R1_FastAPI_ContentType_Response.md](14-R1_FastAPI_ContentType_Response.md)。
+
+
 1. 中间件前半段（请求进入）
 2. Depends：yield 之前 → 打开 db session
 3. 执行路由 / Service

@@ -95,6 +95,8 @@ R0 基线 → R1 鉴权与流式 → R2 LangGraph → R3 RAG → R4 MCP → R5 �
 
 验收：员工手册问答带来源；无关文档不能冒充手册；有 Eval 短报告。
 
+**2026-09-02 后端验收**：上表已落地。上传 / 引文以 API 为准；答案级幻觉（LLM-as-judge）留后。前端知识页选修。
+
 ---
 
 ## 6. R4 — MCP 工具平台（4 周）
@@ -152,7 +154,7 @@ R0 基线 → R1 鉴权与流式 → R2 LangGraph → R3 RAG → R4 MCP → R5 �
 | 部分 Agent CRUD + 自研 loop | M1/M2 碎片 | 已预支 |
 | R0–R1 | M1 认证 + V1 Phase1 Chat | 后端完成；前端选修 |
 | R2 | M2 Runtime（框架级） | 后端完成 |
-| R3 | V1 Phase2 Knowledge | 未做 |
+| R3 | V1 Phase2 Knowledge | 后端完成 |
 | R4–R5 | V1 Phase3–5 的工具与协作 | 未做 |
 | R6 | M4 的薄切片 | 未做 |
 
