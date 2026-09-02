@@ -46,8 +46,8 @@ R2 增加：同一用例 Graph vs legacy 工具序列一致；HITL 未 resume �
 
 - 20+ 条 `{ question, expected_doc_ids, notes }`，见 `apps/api/evals/gold/retrieval.json`。
 - 指标：recall@k、citation precision；空期望却检出记为检索幻觉。答案级幻觉留 LLM-as-judge。
-- 报告：`apps/api/evals/reports/retrieval.md`（`uv run python -m app.ai.knowledge.eval --write-report`）。
-- pytest：`uv run pytest tests/test_knowledge_eval.py -q`。
+- 报告：`apps/api/evals/reports/retrieval.md`。pytest / 默认脚本走 hash + 特征 rerank（无 Key、可回归隔离与准入）。测真实模型：`uv run python -m app.ai.knowledge.eval --live --write-report`。
+- pytest：`uv run pytest tests/test_knowledge_eval.py -q`（禁止打付费 embedding）。
 
 ---
 

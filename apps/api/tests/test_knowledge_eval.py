@@ -38,3 +38,5 @@ async def test_must_hit_gold_cases():
     assert summary.empty_query_hallucination == 0.0
     assert summary.recall_at_k == 1.0
     assert summary.citation_precision == 1.0
+    assert summary.embedder_label == "HashEmbeddingClient"
+    assert summary.reranker_label == "FeatureReranker"
