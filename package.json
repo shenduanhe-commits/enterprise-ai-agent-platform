@@ -5,6 +5,7 @@
   "scripts": {
     "dev:web": "pnpm --dir apps/web dev",
     "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
+    "dev:api-writer": "cd apps/api && uv run uvicorn app.ai.a2a.standalone:app --host 0.0.0.0 --port 8001",
     "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:api\""
   },
   "devDependencies": {

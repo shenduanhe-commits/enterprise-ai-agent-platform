@@ -43,7 +43,7 @@ feature/r6-portfolio
 
 更小的修补：`fix/chat-tool-calls`、`docs/update-status`。
 
-**当前：** R4 合入 `main` 后，下一阶段从最新 `main` 继续 `feature/r5-multi-agent`。
+**当前：** R5 已合入 `main`。下一阶段从最新 `main` 开 `feature/r6-portfolio`。
 
 ---
 

@@ -36,8 +36,8 @@
 | Agent 编排 | LangGraph v1 StateGraph + Checkpointer | R2 |
 | 简单工厂 | `langchain.agents.create_agent`（可选薄封装） | R2 |
 | LLM | Gateway：Qwen 兼容接口 / OpenAI Responses / Anthropic 官方 SDK | 部分已有 |
-| 工具协议 | MCP Client + 自建 Server | R4 |
-| 多 Agent 协议 | A2A（或当时官方仍推的等价协议） | R5 |
+| 工具协议 | MCP Client + 自建订单 Server（官方 mcp 2.x） | R4 后端完成 |
+| 多 Agent 协议 | 自研 `eaap-a2a/v0` HTTP 信封；Writer 可另起 `standalone` 进程 | R5 进行中 |
 | 流式 | SSE | R1 |
 | 认证 | JWT + refresh + Argon2 | R1 |
 | 可观测 | Langfuse + OpenTelemetry | R2/R6 |

@@ -27,5 +27,7 @@ class ChatResponse(BaseModel):
     status: str = "completed"
     pending: dict | None = None
     citations: list[Citation] = Field(default_factory=list)
+    agent_name: str | None = None
+    agents: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

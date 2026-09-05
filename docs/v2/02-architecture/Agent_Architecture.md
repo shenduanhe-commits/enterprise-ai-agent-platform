@@ -33,7 +33,7 @@ V1 一上来画 Supervisor 多 Agent。V2 承认：**先把单 Agent 做成可�
 | created_by | 所有者 |
 | prompts[] | 可版本化的模板（优先于 system_prompt） |
 
-目标字段（R4）：绑定的 tool 列表、是否启用 RAG、HITL 策略。
+工具集走 `agent_tool`（R4 已落地），不写在 Agent 行上。是否启用 RAG、HITL 策略仍可后补字段。
 
 不要为「销售 Agent / HR Agent」各写一套 Python 类，用不同 prompt + 工具集区分。
 
@@ -67,7 +67,7 @@ V1 一上来画 Supervisor 多 Agent。V2 承认：**先把单 Agent 做成可�
 | `LLMGateway` | chat + tool_calls；`response_format` 预留 | 图侧按需传入；真流式仍缺 |
 | `PromptManager` | 最新 prompt 或 system_prompt | 保留；变量渲染已有 |
 | `MemoryManager` | 最近 10 条 | 与 checkpoint 分工：Memory=对话，Checkpoint=图状态 |
-| `ToolManager` | 内存注册 calculator、send_email | R4 注册表 + MCP |
+| `ToolManager` | 每请求按绑定组装；builtin + MCP | R4 已落地 |
 | RAG | Chat 拼 messages 时检索（非图节点）；hybrid + rerank + citations | 已落地 |
 
 ---
@@ -113,13 +113,13 @@ class BaseTool:
     def schema(self) -> dict:  # OpenAI function JSON Schema
 ```
 
-R4 后 Runtime 只认「描述 + 调用」，不关心工具在进程内还是 MCP。
+Runtime 只认「描述 + 调用」，不关心工具在进程内还是 MCP（`McpTool` 走 `tools/call`）。
 
 策略：
 
-- 白名单：Agent 未绑定则模型看不到。
+- 白名单：从未 PUT 绑定则全部 enabled；空绑定则模型看不到任何工具。
 - 超时与错误写成 tool message，不要炸死图。
-- 写操作默认 HITL。
+- 写操作默认 HITL（`send_email`）。
 
 ---
 
@@ -136,16 +136,17 @@ R4 后 Runtime 只认「描述 + 调用」，不关心工具在进程内还是 M
 
 ---
 
-## 8. 多 Agent（R5，不是现在）
+## 8. 多 Agent（R5）
 
 ```
-Supervisor ── Knowledge Agent
-           └─ Writer Agent
+Supervisor ── knowledge（检索）
+           └─ writer（写简报；默认同进程，可 A2A HTTP）
 ```
 
-- 每个专职 Agent 仍是同一 Runtime + 不同配置。
-- 协作用子图或 A2A 消息，不用函数直接互调冒充协议。
-- 默认先问：单 Agent + 工具是否够用。不够再用 Supervisor。
+- 用户话含「简报」「写一页」才进 Supervisor；计算器 / 普通 RAG 仍单 Agent。
+- 路由是确定性的，不是一个 prompt 分饰三角色。
+- Writer 失败立即 `failed`，不自动重试。
+- `A2A_WRITER_URL` 指向另一进程时，Supervisor 只发 `eaap-a2a/v0` 信封，不直接 `write_brief()`。对端用 `app.ai.a2a.standalone`（`pnpm dev:api-writer`，默认 :8001），只挂信箱。
 
 ---
 

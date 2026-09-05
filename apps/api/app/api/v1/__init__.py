@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.v1.a2a import router as a2a_router
 from app.api.v1.agents import router as agents_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.conversations import router as conversations_router
@@ -20,3 +21,4 @@ router.include_router(conversations_router)
 router.include_router(runs_router)
 router.include_router(knowledge_router)
 router.include_router(tools_router)
+router.include_router(a2a_router)

@@ -3,14 +3,14 @@
 | 项目 | 内容 |
 | --- | --- |
 | 版本 | V2.1 |
-| 更新日期 | 2026-09-02 |
+| 更新日期 | 2026-09-05 |
 | 替代 | 根目录 `EAAP_STATUS.md`、`PROJECT_CHANGELOG.md`（V1，已过期） |
 
 ---
 
 ## 1. 一句话
 
-后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 与手写 LangGraph、checkpoint、HITL、节点轨迹已接通。最终回复在 `content`。Chat 按知识库 hybrid 检索并带 `citations`。**R3 后端完成**（Chat 不启用 Structured output；批准 UI 与 Langfuse 不做）。前端演示壳仍未接。
+后端能注册登录、创建自己的 Agent，并用 Mock / Qwen 跑工具循环；SSE 与手写 LangGraph、checkpoint、HITL、节点轨迹已接通。最终回复在 `content`。Chat 按知识库 hybrid 检索并带 `citations`。MCP 默认进程内模拟订单 `lookup_order`，挂了降级。工具注册表启动同步；Agent 可勾选工具集（未勾选 = 全部 enabled）。**R4 后端完成**；**R5 进行中**（简报走 Supervisor：knowledge → writer）。
 
 ---
 
@@ -21,8 +21,8 @@ R0  基线修复          ████████████  完成
 R1  认证 + 流式 API   ██████████░░  后端验收完成；前端演示壳选修
 R2  LangGraph Runtime ████████████  后端完成；前端批准按钮选修
 R3  企业 RAG          ████████████  后端完成；cross-encoder 可选配置，未配则特征 rerank
-R4  MCP               ░░░░░░░░░░░░  未开始
-R5  Multi-Agent / A2A ░░░░░░░░░░░░  未开始
+R4  MCP               ████████████  后端完成；前端勾选页选修
+R5  Multi-Agent / A2A ██████░░░░░░  简报 Supervisor + 跨进程 Writer（`pnpm dev:api-writer`）
 R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 ```
 
@@ -45,12 +45,14 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 | 登录 / 刷新 | `POST /api/v1/auth/login`、`/auth/refresh`；Bearer access JWT |
 | 当前用户 | `GET /api/v1/auth/me` |
 | Agent CRUD | `POST/GET /api/v1/agents`（按 `created_by` 隔离） |
-| Chat | `POST /api/v1/agents/{id}/chat`（非流式，可 interrupted）、`/chat/stream`（SSE） |
+| Chat | `POST /api/v1/agents/{id}/chat`（非流式，可 interrupted）、`/chat/stream`（SSE）；话含「简报」「写一页」走 Supervisor，响应带 `agents` |
+| A2A | `POST /api/v1/a2a/message`（头 `X-EAAP-A2A-Key`，不是用户 JWT） |
 | 会话 | `GET /api/v1/conversations`、`GET /api/v1/conversations/{id}/messages` |
 | HITL | `GET /api/v1/runs/{id}`、`POST /api/v1/runs/{id}/resume`（run_id = conversation_id） |
 | 节点轨迹 | `GET /api/v1/runs/{id}/spans`（JWT，仅会话主人） |
 | 知识库 | `POST/GET/DELETE /api/v1/knowledge/documents`；Chat 按 JWT user + agent 检索，响应带 `citations` |
-| 模型 | `user`、`agent`、`prompt`、`conversation`、`conversation_message`、`run_span`、`knowledge_document` |
+| 工具 | `GET /api/v1/tools`；`PUT /api/v1/agents/{id}/tools`（空列表 = 该 Agent 无工具） |
+| 模型 | `user`、`agent`、`prompt`、`conversation`、`conversation_message`、`run_span`、`knowledge_document`、`tool`、`agent_tool` |
 
 ### AI
 
@@ -63,8 +65,9 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 - Qwen、OpenAI 解析 OpenAI 形态 `tool_calls`；Anthropic 走 `messages.create` + `tool_use`。
 - `PromptManager`：优先最新 Prompt 模板，否则 Agent `system_prompt`。
 - `MemoryManager`：最近 10 条消息。
-- `ToolManager`：内置 calculator、send_email；calculator 内部仍是 `eval()`。
+- `ToolManager`：内置 calculator、send_email；启动 upsert `tool` 表（MCP 消失则 `enabled=false`，不 DELETE）。Chat / HITL resume 按 `agent_tool` 勾选（未勾选则全部 enabled；空绑定 = 无工具）。MCP：`servers.py` 配 http / stdio / inprocess，默认进程内 `lookup_order`。calculator 内部仍是 `eval()`。
 - 知识检索：Qdrant dense + sparse RRF；准入后 cross-encoder（`RERANK_*`）或特征 rerank；摘录有 token 预算。
+- R5 Supervisor：检索专职 `knowledge` + 写作专职 `writer`（子图顺序，不是一个 prompt 分饰）。Writer 默认同进程；`A2A_WRITER_URL` 有值则 HTTP `eaap-a2a/v0` 打到对端（`pnpm dev:api-writer` 起 `standalone` 于 :8001，只挂信箱，不跑 Chat/MCP）。Writer 失败 `status=failed`，不重试。`test_a2a_cross_process.py` 会另起进程验收。
 
 ### 前端
 
@@ -72,7 +75,7 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 
 ### 测试
 
-- pytest：含 `test_agent_graph.py`（图 / checkpoint / HITL / spans）、`test_structured.py`。
+- pytest：含 `test_agent_graph.py`、`test_supervisor.py`、`test_a2a_cross_process.py`、`test_mcp_orders.py`、`test_tool_catalog.py`、`test_tool_service.py`、`test_structured.py`。
 - 连库手写脚本已用 `if __name__ == "__main__"` 保护。
 
 ---
@@ -82,14 +85,15 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 1. Calculator 使用 `eval()`，不能当生产工具。
 2. SSE `token` 是整段回答切块，不是模型真流式。
 3. 会话 `update` / `delete` 尚未挂路由，Service 层也不带 `user_id`。
-4. 前端未接登录 / Agent / Chat。
+4. 前端未接登录 / Agent / Chat / 工具勾选。
 5. Chat Structured output、前端批准按钮：R2 明确不做。Langfuse 属 R6。
+6. `tool.mcp_url` 目前多为空。HTTP MCP 可配静态 `headers`（如 Bearer）；OAuth 未做。
 
 ---
 
 ## 5. 下一步
 
-**R3 后端完成。** 下一步 R4 MCP。
+**R5 进行中。** 简报路径能看出两个 `agent_name`；跨进程 Writer 用 `pnpm dev:api-writer` + Chat 进程设 `A2A_WRITER_URL`。本机需 `alembic upgrade head`。
 
 本机演示账号：`user@eaap.com` / `user`（仅开发库）。
 
@@ -99,6 +103,11 @@ R6  生产化 + 作品集   ░░░░░░░░░░░░  未开始
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-09-05 | R5：跨进程 Writer（`standalone` + `test_a2a_cross_process`） |
+| 2026-09-05 | R5：Supervisor knowledge→writer；Chat `agents`；`POST /a2a/message` |
+| 2026-09-05 | R4 后端验收：MCP + 注册表 + Agent 勾选；resume 跟绑定；前端勾选选修 |
+| 2026-09-04 | R4：`tool` / `agent_tool` 注册表；启动 upsert；Agent 勾选工具集 |
+| 2026-09-03 | R4：官方 mcp SDK；模拟订单 `lookup_order`；Client 发现/调用，失败降级 |
 | 2026-09-02 | R3：准入后可选 cross-encoder rerank（`RERANK_*`）；失败或未配则特征 rerank |
 | 2026-09-02 | R3：检索黄金集 24 条，报告 recall@4 / citation precision |
 | 2026-09-02 | R3：检索准入后做 query-document 特征 rerank |
