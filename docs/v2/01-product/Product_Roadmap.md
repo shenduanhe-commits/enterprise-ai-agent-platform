@@ -113,6 +113,8 @@ R0 基线 → R1 鉴权与流式 → R2 LangGraph → R3 RAG → R4 MCP → R5 �
 
 验收：MCP Server 挂掉时明确降级；两 Agent 工具集可不同。
 
+**后端状态（2026-09-05）**：已验收。前端勾选页选修，与 R1/R2 演示壳同一口径。
+
 ---
 
 ## 7. R5 — Multi-Agent 与 A2A（4 周）
@@ -128,6 +130,8 @@ R0 基线 → R1 鉴权与流式 → R2 LangGraph → R3 RAG → R4 MCP → R5 �
 不做：Marketplace、全网 Agent 发现。
 
 验收：「按知识库写简报」能看出分工；能讲清 Writer 失败时如何中止/重试。
+
+**后端状态（2026-09-05）**：knowledge → writer 子图 + Chat `agents` 已落地。跨进程：`pnpm dev:api-writer`（:8001）+ Chat 进程 `A2A_WRITER_URL`。
 
 ---
 
@@ -155,7 +159,7 @@ R0 基线 → R1 鉴权与流式 → R2 LangGraph → R3 RAG → R4 MCP → R5 �
 | R0–R1 | M1 认证 + V1 Phase1 Chat | 后端完成；前端选修 |
 | R2 | M2 Runtime（框架级） | 后端完成 |
 | R3 | V1 Phase2 Knowledge | 后端完成 |
-| R4–R5 | V1 Phase3–5 的工具与协作 | 未做 |
+| R4–R5 | V1 Phase3–5 的工具与协作 | R4 后端完成；R5 简报 Supervisor 进行中 |
 | R6 | M4 的薄切片 | 未做 |
 
 ---

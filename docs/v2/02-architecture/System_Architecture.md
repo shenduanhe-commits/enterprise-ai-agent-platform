@@ -59,7 +59,8 @@ enterprise-ai-agent-platform
 │   │   └── ai/
 │   │       ├── llm/           # Gateway + providers
 │   │       ├── runtime/       # agent_executor.py + StateGraph
-│   │       ├── tools/         # 已有；MCP adapter(R4)
+│   │       ├── tools/         # calculator / send_email
+│   │       ├── mcp/           # servers.py + Client；本地 Server 在 local_mcp_server/
 │   │       ├── memory/
 │   │       ├── prompts/
 │   │       └── knowledge/     # 解析 / 切块 / 检索 / rerank / eval
@@ -143,8 +144,8 @@ POST /api/v1/agents/{id}/chat
 | R1 | 同一单体 + Auth 依赖 |
 | R2 | 同一单体 + Graph Runtime + checkpointer |
 | R3 | 同一单体 + `ai/knowledge` + Qdrant 真正使用 |
-| R4 | 同一单体 + 侧车或同机构 MCP Server |
-| R5 | 仍单体；A2A 可另起一个进程证明协议 |
+| R4 | 同一单体 + 进程内 MCP（stdio / HTTP 可配） |
+| R5 | Chat 仍单体；Writer 可 `standalone` 另起进程（A2A HTTP） |
 | R6 | 加 telemetry sidecar（Langfuse），不拆业务服务 |
 
 ---
@@ -156,4 +157,4 @@ POST /api/v1/agents/{id}/chat
 | 可测试 | Service/Runtime 可注入 Gateway/Tool |
 | 可替换模型 | Provider 接口统一 |
 | 可观测 | R2 记 node；R6 接 OTel/Langfuse |
-| 安全 | R1 JWT；R4 工具权限；R6 护栏 |
+| 安全 | R1 JWT；R4 Agent 工具绑定；R6 护栏 |

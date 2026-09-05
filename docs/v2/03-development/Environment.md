@@ -43,6 +43,7 @@ cp .env.example .env
 # 按需填 QWEN_API_KEY / QWEN_BASE_URL 或 OPENAI_API_KEY（聊天）
 # 知识库向量另填 EMBEDDING_API_KEY / EMBEDDING_BASE_URL / EMBEDDING_MODEL
 # Cross-encoder rerank 另填 RERANK_API_KEY / RERANK_BASE_URL / RERANK_MODEL（不配则本地特征 rerank）
+# R4 MCP：改 apps/api/app/ai/mcp/servers.py（MCP_ENABLED / MCP_TIMEOUT / 三类 Server list）
 
 # 2. 基础设施
 docker compose up -d
@@ -52,6 +53,14 @@ cd apps/api
 uv sync
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# 3b. 选修：跨进程 Writer（另一终端；不要把 URL 写进长期 .env）
+# pnpm dev:api-writer
+# 然后本终端：
+# Windows PowerShell:
+#   $env:A2A_WRITER_URL="http://127.0.0.1:8001/api/v1/a2a/message"
+#   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Chat 打「写一页简报」时，8000 的 Supervisor 寄信，8001 的 Writer 回信。
 
 # 4. 前端（可选，R0 不需要）
 # 仓库根目录
@@ -93,7 +102,7 @@ docker compose down
 
 ## 5. 环境变量（根 `.env`）
 
-已有：`POSTGRES_*`、`DATABASE_URL`、`REDIS_*`、`QDRANT_*`、`API_PORT`、`WEB_PORT`、`VITE_API_URL`、`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`QWEN_API_KEY` / `QWEN_BASE_URL`。知识库 embedding 单独配：`EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL`、`EMBEDDING_MODEL`、`EMBEDDING_DIM`、`EMBEDDING_BATCH`（默认 16）。知识摘录上限：`KNOWLEDGE_CONTEXT_TOKENS`（默认 1024）。Cross-encoder rerank 单独配：`RERANK_API_KEY`、`RERANK_BASE_URL`、`RERANK_MODEL`（三者都有才启用）。百炼 `qwen3.7-text-rerank` 的 URL 必须是 `.../api/v1/services/rerank/text-rerank/text-rerank`，不要抄 embedding 的 `compatible-mode/v1`。不配 embedding Key 或模型则本地 hash；不配 rerank 则本地特征 rerank。
+已有：`POSTGRES_*`、`DATABASE_URL`、`REDIS_*`、`QDRANT_*`、`API_PORT`、`WEB_PORT`、`VITE_API_URL`、`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`QWEN_API_KEY` / `QWEN_BASE_URL`。知识库 embedding 单独配：`EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL`、`EMBEDDING_MODEL`、`EMBEDDING_DIM`、`EMBEDDING_BATCH`（默认 16）。知识摘录上限：`KNOWLEDGE_CONTEXT_TOKENS`（默认 1024）。Cross-encoder rerank 单独配：`RERANK_API_KEY`、`RERANK_BASE_URL`、`RERANK_MODEL`（三者都有才启用）。百炼 `qwen3.7-text-rerank` 的 URL 必须是 `.../api/v1/services/rerank/text-rerank/text-rerank`，不要抄 embedding 的 `compatible-mode/v1`。不配 embedding Key 或模型则本地 hash；不配 rerank 则本地特征 rerank。R4 MCP：开关、超时和 Server 名单都在 `apps/api/app/ai/mcp/servers.py`（`MCP_ENABLED`、`MCP_TIMEOUT`；http / stdio / inprocess 三类 list，每条带 `kind`，启动时合并后连 Client）。HTTP 条目可加 `headers`（如 `Authorization`），每台 Server 自己写，不要共用一把全局钥匙。默认只有进程内模拟订单。一个 Server 挂了不影响其它。R5 A2A：`A2A_WRITER_URL` 空则 Writer 进程内；填 `http://host:port/api/v1/a2a/message` 则 Supervisor 用 HTTP 信封调用（`A2A_INTERNAL_KEY` / 头 `X-EAAP-A2A-Key`）。
 
 R1 将加：`JWT_SECRET`、`JWT_EXPIRE_MINUTES`。不要把真实 Key 提交进 Git。
 

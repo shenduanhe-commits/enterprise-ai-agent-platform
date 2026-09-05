@@ -2,7 +2,7 @@ import logging
 import operator
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
@@ -58,11 +58,17 @@ class AgentGraphState(TypedDict):
     iteration: int
 
 
+# 执行结果
+# status: 执行状态，completed 表示成功，interrupted 表示中断，failed 表示失败
+# message: 执行结果消息
+# pending: 待审批的工具调用
+# agents：这次参与协作的名单，专职角色名
 @dataclass
 class GraphRunResult:
     status: str
     message: AIMessage | None = None
     pending: dict | None = None
+    agents: list[str] = field(default_factory=list)
 
 
 class AgentGraph:

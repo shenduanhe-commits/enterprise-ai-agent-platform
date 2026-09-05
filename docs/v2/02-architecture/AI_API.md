@@ -35,7 +35,7 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 | POST | `/api/v1/agents` | 创建；`created_by` 取 JWT | Bearer |
 | GET | `/api/v1/agents` | 当前用户的 Agent | Bearer |
 | GET | `/api/v1/agents/{id}` | 详情；非所有者 404 | Bearer |
-| POST | `/api/v1/agents/{id}/chat` | 非流式对话；危险工具会 `status=interrupted` | Bearer |
+| POST | `/api/v1/agents/{id}/chat` | 非流式对话；危险工具会 `status=interrupted`；简报走 Supervisor | Bearer |
 | POST | `/api/v1/agents/{id}/chat/stream` | SSE：token / tool / interrupt / done / error | Bearer |
 | GET | `/api/v1/conversations` | 当前用户会话；可选 `?agent_id=` | Bearer |
 | GET | `/api/v1/conversations/{id}/messages` | 历史；非所有者 404 | Bearer |
@@ -45,6 +45,9 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
 | POST | `/api/v1/knowledge/documents` | multipart 上传 `.md` / `.pdf` / `.docx`；同步切块入库后返回 `ready` 或 `failed` | Bearer |
 | GET | `/api/v1/knowledge/documents` | 当前用户的文档；可选 `?agent_id=` | Bearer |
 | DELETE | `/api/v1/knowledge/documents/{id}` | 删自己的文档、磁盘文件和 Qdrant 点；别人的 id 当 404 | Bearer |
+| GET | `/api/v1/tools` | 工具注册表；JSON 字段 `input_schema`（库列仍叫 `schema`） | Bearer |
+| PUT | `/api/v1/agents/{id}/tools` | 绑定 `tool_ids`；空列表 = 该 Agent 无工具；从未 PUT = Chat 用全部 enabled | Bearer |
+| POST | `/api/v1/a2a/message` | Writer 对端；`X-EAAP-A2A-Key` | 内部 key |
 
 ### 创建 Agent
 
@@ -82,11 +85,15 @@ V1 规划了独立 `/chat`、`/tasks`、`/admin`。V2 把对话挂在 Agent 下�
   "created_at": "2026-08-15T00:00:00Z",
   "status": "completed",
   "pending": null,
-  "citations": []
+  "citations": [],
+  "agent_name": null,
+  "agents": []
 }
 ```
 
-`conversation_id` 为空则按 `user_message` 建会话。助手回复只在 `content`。知识库出处在 `citations`（`document_id` / `title` / `chunk_id`），没命中为 `[]`。不要再包一层和 `content` 重复的 `output`。
+`conversation_id` 为空则按 `user_message` 建会话。助手回复只在 `content`。知识库出处在 `citations`（`document_id` / `title` / `chunk_id`），没命中为 `[]`。不要再包一层和 `content` 重复的 `output`。用户话说「简报」或「写一页」时走 Supervisor：`agents` 为 `["knowledge","writer"]`，`agent_name` 为最后一个。Writer 失败则 `status=failed`。
+
+`POST /api/v1/a2a/message`：内部信封，头 `X-EAAP-A2A-Key`（`A2A_INTERNAL_KEY`），body `from_agent` / `to_agent` / `task_id` / `content`。不是用户 JWT。跨进程时 Chat API（:8000）设 `A2A_WRITER_URL=http://127.0.0.1:8001/api/v1/a2a/message`，Writer 进程 `pnpm dev:api-writer`。
 
 SSE 示例：
 
@@ -127,7 +134,37 @@ data: {"conversation_id":10,"role":"assistant","content":"...","created_at":null
 }
 ```
 
-`approved: false` 的工具结果为 `user denied`，不会执行。`run_id` 等于 `conversation_id`。
+`approved: false` 的工具结果为 `user denied`，不会执行。`run_id` 等于 `conversation_id`。resume 按该会话的 `agent_id` 套与 Chat 同一套工具绑定。
+
+### 工具
+
+`GET /api/v1/tools`：
+
+```json
+[
+  {
+    "id": 1,
+    "name": "calculator",
+    "description": "用于数学计算",
+    "input_schema": {
+      "type": "function",
+      "function": { "name": "calculator", "description": "用于数学计算" }
+    },
+    "source": "builtin",
+    "mcp_url": null,
+    "requires_hitl": false,
+    "enabled": true
+  }
+]
+```
+
+`PUT /api/v1/agents/{id}/tools`：
+
+```json
+{ "tool_ids": [1, 3] }
+```
+
+空数组表示该 Agent 没有工具。MCP 本次启动没出现的名字会在注册表里 `enabled=false`，不会 DELETE。
 
 `GET /api/v1/runs/10/spans` 按时间返回该会话的图节点（不存完整 prompt / messages）：
 
@@ -164,14 +201,7 @@ data: {"conversation_id":10,"role":"assistant","content":"...","created_at":null
 
 ## 3. 计划中的端点
 
-R3 知识库端点已落地（见第 2 节）。Chat 按 `user_id` + `agent_id` 做 dense + sparse RRF，准入后 rerank（cross-encoder 或特征回退），并返回 `citations`。
-
-### R4
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/tools` | 注册表 |
-| PUT | `/agents/{id}/tools` | 绑定工具 ID 列表 |
+R3 知识库、R4 工具注册表已落地（见第 2 节）。
 
 ### R5–R6
 

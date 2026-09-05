@@ -13,6 +13,7 @@ from app.ai.llm.gateway import LLMGateway
 from app.ai.memory.manager import MemoryManager
 from app.ai.prompts.manager import PromptManager
 from app.ai.runtime.agent_graph import AgentGraph, iter_token_chunks
+from app.ai.runtime.supervisor import SupervisorGraph, wants_supervisor
 from app.ai.structured import parse_final_answer
 from app.ai.tools.manager import ToolManager
 from app.ai.tools.parser import parse_tool_call_arguments
@@ -69,6 +70,25 @@ class AgentExecutor:
             conversation_id=conversation_id,
         )
 
+    def _supervisor(
+        self,
+        agent: AgentResponse,
+        conversation: ConversationResponse,
+        *,
+        db: AsyncSession | None = None,
+    ) -> SupervisorGraph:
+        recorder = None
+        if db is not None:
+            recorder = self._span_recorder(db, conversation.id)
+        return SupervisorGraph(
+            self.llm_gateway,
+            agent,
+            knowledge_retriever=self.knowledge_retriever,
+            user_id=conversation.user_id,
+            agent_id=agent.id,
+            span_recorder=recorder,
+        )
+
     def _span_recorder(self, db: AsyncSession, conversation_id: int):
         async def record(
             *,
@@ -103,6 +123,32 @@ class AgentExecutor:
         user_message: str,
         variables: dict | None = None,
     ) -> ChatResponse:
+
+        if wants_supervisor(user_message):
+            team = self._supervisor(agent, conversation, db=db)
+            outcome = await team.run(user_message)
+            self._citations = team.citations
+            if outcome.status == "failed":
+                content = outcome.message.content if outcome.message else None
+                return self._chat_response(
+                    conversation.id,
+                    content=content,
+                    status="failed",
+                    agents=outcome.agents,
+                )
+            content = outcome.message.content if outcome.message else None
+            message = await self.memory_manager.create_message(
+                db,
+                conversation_id=conversation.id,
+                user_message=user_message,
+                assistant_message=content or "",
+            )
+            return self._chat_response(
+                conversation.id,
+                content=content,
+                created_at=message.created_at,
+                agents=outcome.agents,
+            )
 
         messages = await self._build_messages(
             db, agent, conversation, user_message, variables
@@ -145,6 +191,44 @@ class AgentExecutor:
         user_message: str,
         variables: dict | None = None,
     ) -> AsyncIterator[tuple[str, dict]]:
+        if wants_supervisor(user_message):
+            team = self._supervisor(agent, conversation, db=db)
+            token_parts: list[str] = []
+            failed: str | None = None
+            async for event, data in team.stream(user_message):
+                if event == "token":
+                    token_parts.append(data["text"])
+                if event == "error":
+                    failed = data.get("message")
+                yield event, data
+            self._citations = team.citations
+            if failed is not None:
+                yield "done", self._chat_payload(
+                    self._chat_response(
+                        conversation.id,
+                        content=failed,
+                        status="failed",
+                        agents=team.agents,
+                    )
+                )
+                return
+            content = "".join(token_parts) or None
+            message = await self.memory_manager.create_message(
+                db,
+                conversation_id=conversation.id,
+                user_message=user_message,
+                assistant_message=content or "",
+            )
+            yield "done", self._chat_payload(
+                self._chat_response(
+                    conversation.id,
+                    content=content,
+                    created_at=message.created_at,
+                    agents=team.agents,
+                )
+            )
+            return
+
         messages = await self._build_messages(
             db, agent, conversation, user_message, variables
         )
@@ -226,7 +310,9 @@ class AgentExecutor:
         pending: dict | None = None,
         created_at=None,
         citations: list[Citation] | None = None,
+        agents: list[str] | None = None,
     ) -> ChatResponse:
+        names = list(agents or [])
         return ChatResponse(
             conversation_id=conversation_id,
             role="assistant",
@@ -235,6 +321,8 @@ class AgentExecutor:
             status=status,
             pending=pending,
             citations=citations if citations is not None else list(self._citations),
+            agent_name=names[-1] if names else None,
+            agents=names,
         )
 
     def _chat_payload(self, response: ChatResponse) -> dict:

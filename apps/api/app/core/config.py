@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     # Backend
     API_PORT: int = 8000
 
+    # R5 A2A：空 URL = Writer 进程内；有 URL 则 HTTP 信封调对端
+    A2A_WRITER_URL: str | None = None
+    A2A_INTERNAL_KEY: str = "dev-a2a-key"
+
     # JWT
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
