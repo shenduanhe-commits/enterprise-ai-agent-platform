@@ -23,11 +23,31 @@ class MockLLMProvider(BaseLLMProvider):
         last_message = messages[-1]
         _ = response_format
 
+        writer = next(
+            (
+                message.content
+                for message in messages
+                if message.role == "system"
+                and (message.content or "").startswith("【Writer】")
+            ),
+            None,
+        )
+        if writer and last_message.role == "user":
+            notes = last_message.content or ""
+            return self._final(f"简报：根据笔记整理。{notes[:80]}")
+
         # 上一轮已经执行过工具：Executor 会把 tool 结果追加进 messages。
         # 这时不能再返回 tool_calls，否则 run_loop 会一直转，直到超轮次。
         if last_message.role == "tool":
             content = last_message.content or ""
             if "已发送" in content or content == "user denied":
+                return self._final(content)
+            prev = messages[-2] if len(messages) >= 2 else None
+            names = [
+                call.get("function", {}).get("name")
+                for call in (prev.tool_calls or [])
+            ] if prev else []
+            if "lookup_order" in names:
                 return self._final(content)
             return self._final(f"计算结果是 {content}")
 
@@ -56,6 +76,22 @@ class MockLLMProvider(BaseLLMProvider):
         # 用户提问 + 当前 Agent 挂了 calculator + 话里像算式
         # → 假装模型决定调工具。形状必须和 Qwen 解析出来的 tool_calls 一样，
         # execute_tools 才能用 function.name / function.arguments。
+        if self._should_call_lookup_order(last_message, tools):
+            order_id = self._extract_order_id(last_message.content or "")
+            return AIMessage(
+                role="assistant",
+                content=None,
+                tool_calls=[
+                    {
+                        "id": "call_lookup_order_1",
+                        "function": {
+                            "name": "lookup_order",
+                            "arguments": json.dumps({"order_id": order_id}),
+                        },
+                    }
+                ],
+            )
+
         if self._should_call_calculator(last_message, tools):
             expression = self._extract_expression(last_message.content or "")
             return AIMessage(
@@ -108,6 +144,27 @@ class MockLLMProvider(BaseLLMProvider):
             return False
         text = (last_message.content or "").lower()
         return "邮件" in text or "email" in text or "发信" in text
+
+    def _should_call_lookup_order(
+        self,
+        last_message: AIMessage,
+        tools: list[dict] | None,
+    ) -> bool:
+        if last_message.role != "user" or not tools:
+            return False
+        names = [
+            tool.get("function", tool).get("name")
+            for tool in tools
+            if isinstance(tool, dict)
+        ]
+        if "lookup_order" not in names:
+            return False
+        text = last_message.content or ""
+        return "订单" in text or "ORD-" in text.upper()
+
+    def _extract_order_id(self, content: str) -> str:
+        match = re.search(r"ORD-\d+", content, re.IGNORECASE)
+        return match.group(0).upper() if match else content.strip()
 
     def _should_call_calculator(
         self,

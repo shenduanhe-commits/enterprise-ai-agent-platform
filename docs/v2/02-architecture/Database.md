@@ -124,9 +124,9 @@ R3：上传 `.md` / `.pdf` / `.docx` 后同步切块并写入 Qdrant；接口返
 
 ### R4
 
-**tool**（注册表）：name、description、schema、source（builtin/mcp）、mcp_url、requires_hitl、enabled
+**tool**（已落地）：name、description、schema（JSONB；接口输出为 `input_schema`）、source（builtin/mcp）、mcp_url（当前多为空）、requires_hitl、enabled。启动 upsert；缺席的 MCP 名只 `enabled=false`。
 
-**agent_tool**：agent_id、tool_id
+**agent_tool**（已落地）：agent_id、tool_id；空绑定 = 该 Agent 无工具。
 
 ### R6
 

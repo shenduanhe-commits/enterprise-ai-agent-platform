@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, Request
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.knowledge.reranker import get_reranker
@@ -30,16 +31,19 @@ from app.ai.prompts.manager import (
 from app.ai.runtime.agent_executor import (
     AgentExecutor,
 )
-from langgraph.checkpoint.base import BaseCheckpointSaver
-from app.ai.tools.builtin.calculator import CalculatorTool
-from app.ai.tools.builtin.send_email import SendEmailTool
+from app.ai.tools import BUILTIN_TOOLS
+from app.ai.tools.base import BaseTool
 from app.ai.tools.manager import ToolManager
 from app.core.config import settings
 from app.core.database import get_db
+from app.repositories.agent_repository import AgentRepository
 from app.repositories.conversation_message_repository import (
     ConversationMessageRepository,
 )
+from app.repositories.conversation_repository import ConversationRepository
 from app.repositories.prompt_repository import PromptRepository
+from app.repositories.tool_repository import ToolRepository
+from app.services.tool_service import ToolService
 
 
 def get_llm_gateway() -> LLMGateway:
@@ -100,14 +104,46 @@ async def get_memory_manager(
 MemoryManagerDep = Annotated[MemoryManager, Depends(get_memory_manager)]
 
 
-def get_tool_manager() -> ToolManager:
+def get_tool_manager(request: Request, names: list[str] | None) -> ToolManager:
+    """None names = all available. Empty list = no tools."""
+    mcp_tools = [
+        tool
+        for tool in getattr(request.app.state, "mcp_tools", []) or []
+        if isinstance(tool, BaseTool)
+    ]
+    available: dict[str, BaseTool] = {
+        tool.name: tool for tool in [*BUILTIN_TOOLS, *mcp_tools]
+    }
     manager = ToolManager()
-    manager.register(CalculatorTool())
-    manager.register(SendEmailTool())
+    if names is None:
+        for tool in available.values():
+            manager.register(tool)
+    else:
+        for name in names:
+            tool = available.get(name)
+            if tool is not None:
+                manager.register(tool)
     return manager
 
 
-ToolManagerDep = Annotated[ToolManager, Depends(get_tool_manager)]
+# 根据路径参数agent_id或者run_id获取agent_id，找不到则返回none
+async def agent_id_for_tools(
+    request: Request,
+    db: AsyncSession,
+    conversations: ConversationRepository | None = None,
+) -> int | None:
+    """Chat has agent_id; HITL resume only has run_id (= conversation_id)."""
+    raw_agent = request.path_params.get("agent_id")
+    if raw_agent is not None:
+        return int(raw_agent)
+    raw_run = request.path_params.get("run_id")
+    if raw_run is None:
+        return None
+    repo = conversations or ConversationRepository()
+    conversation = await repo.get_by_id(db, int(raw_run))
+    if conversation is None:
+        return None
+    return conversation.agent_id
 
 
 def get_checkpointer(request: Request) -> BaseCheckpointSaver | None:
@@ -122,18 +158,25 @@ def _knowledge_retriever() -> KnowledgeRetriever:
 
 
 async def get_agent_executor(
+    request: Request,
+    db: DbSession,
     llm_gateway: LLMGatewayDep,
     prompt_manager: PromptManagerDep,
     memory_manager: MemoryManagerDep,
-    tool_manager: ToolManagerDep,
     checkpointer: CheckpointerDep,
 ) -> AgentExecutor:
+    names: list[str] | None = None
+    agent_id = await agent_id_for_tools(request, db)
+    if agent_id is not None:
+        names = await ToolService(
+            ToolRepository(), AgentRepository()
+        ).selected_names_for_agent(db, agent_id)
 
     return AgentExecutor(
         llm_gateway=llm_gateway,
         prompt_manager=prompt_manager,
         memory_manager=memory_manager,
-        tool_manager=tool_manager,
+        tool_manager=get_tool_manager(request, names),
         checkpointer=checkpointer,
         knowledge_retriever=_knowledge_retriever(),
     )

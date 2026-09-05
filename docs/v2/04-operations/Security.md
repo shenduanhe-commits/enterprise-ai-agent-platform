@@ -26,7 +26,7 @@ V1 覆盖 SSO、完整 RBAC、数据分级。V2 按阶段长，先达到「能�
 | R1 | JWT access + refresh；资源按 `user_id` 隔离；HTTPS 仅生产再谈（机制见 [HTTPS.md](../05-notes/09-HTTPS.md)） |
 | R2 | 危险工具 HITL；工具超时 |
 | R3 | 文档按 owner 隔离；检索带 filter |
-| R4 | 工具注册表权限；MCP Server 鉴权 |
+| R4 | 工具注册表 + Agent 绑定；HTTP MCP 可配 `headers`（静态 Bearer）；OAuth 未做 |
 | R6 | admin/member；审计日志；基础提示注入与 PII 脱敏；工具白名单 |
 
 SSO、完整 permission 矩阵、字段级加密：Hold。

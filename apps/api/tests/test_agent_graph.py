@@ -15,9 +15,20 @@ from app.ai.type import AIMessage
 from app.core.exceptions import AgentRuntimeException, BusinessException
 
 
-def _hitl_tools() -> tuple[ToolManager, SendEmailTool]:
+class RecordingSendEmailTool(SendEmailTool):
+    """Test spy: production tool has no outbox."""
+
+    def __init__(self):
+        self.sent: list[dict] = []
+
+    async def execute(self, to: str, subject: str = "", body: str = ""):
+        self.sent.append({"to": to, "subject": subject, "body": body})
+        return await super().execute(to=to, subject=subject, body=body)
+
+
+def _hitl_tools() -> tuple[ToolManager, RecordingSendEmailTool]:
     tools = ToolManager()
-    email = SendEmailTool()
+    email = RecordingSendEmailTool()
     tools.register(CalculatorTool())
     tools.register(email)
     return tools, email

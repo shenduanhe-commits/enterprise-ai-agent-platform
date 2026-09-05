@@ -33,7 +33,7 @@ R0–R5：先有 max iterations 和 Mock，避免本地开发烧钱。Live 测�
 | --- | --- |
 | Agent | 所有者 + status；R6 admin 可禁用 |
 | Prompt | `prompt.version` 已有；不要静默改线上模板 |
-| Tool | R4 注册表 + 绑定；写操作 HITL |
+| Tool | R4 注册表 + 绑定（已落地）；写操作 HITL |
 | Model | Agent 上的 provider/model 字段，不在代码写死一家 |
 | 知识 | R3 owner 隔离 |
 | 执行 | R2+ run/trace；R6 审计 |

@@ -6,12 +6,7 @@ class SendEmailTool(BaseTool):
     description = "发送邮件。调用后必须经人工批准才会发送。"
     requires_approval = True
 
-    def __init__(self):
-        self.sent: list[dict] = []
-
     async def execute(self, to: str, subject: str = "", body: str = ""):
-        payload = {"to": to, "subject": subject, "body": body}
-        self.sent.append(payload)
         return f"已发送 to={to} subject={subject}"
 
     @property
